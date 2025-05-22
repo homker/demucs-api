@@ -9,6 +9,9 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key-12345')
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
     
+    # API设置
+    BASE_URL = os.environ.get('BASE_URL', '')  # API基础路径，例如/demucs
+    
     # Admin settings
     ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN', 'admin-token-12345')  # 用于管理接口认证的令牌
     

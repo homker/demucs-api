@@ -15,12 +15,31 @@ services:
       - FILE_RETENTION_MINUTES=${FILE_RETENTION_MINUTES:-60}
       - DEFAULT_MODEL=${DEFAULT_MODEL:-htdemucs}
     volumes:
-      - ./uploads:/app/uploads
-      - ./outputs:/app/outputs
+      - demucs_uploads:/app/uploads
+      - demucs_outputs:/app/outputs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8080}/api/models"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s 
+      start_period: 40s
+      
+  # 定时清理服务
+  cleanup:
+    build: .
+    volumes:
+      - demucs_uploads:/app/uploads
+      - demucs_outputs:/app/outputs
+      - ./logs:/app/logs
+    command: sh -c "while true; do python cleanup_files.py --verbose; sleep 3600; done"
+    restart: unless-stopped
+    depends_on:
+      - demucs-api
+
+# 定义命名卷
+volumes:
+  demucs_uploads:
+    driver: local
+  demucs_outputs:
+    driver: local 

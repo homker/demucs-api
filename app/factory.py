@@ -59,7 +59,9 @@ def register_blueprints(app):
     # 主页路由
     @app.route('/')
     def index():
-        return render_template('index.html')
+        # 获取BASE_URL环境变量传递给模板
+        base_url = app.config.get('BASE_URL', '')
+        return render_template('index.html', base_url=base_url)
     
     # 调试页面路由
     @app.route('/debug')

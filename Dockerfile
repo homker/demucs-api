@@ -5,20 +5,29 @@ WORKDIR /app
 # 安装系统依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
-    xz-utils \
+    gnupg \
+    lsb-release \
     ca-certificates \
     build-essential \
+    software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装FFmpeg 6.1.1版本（确保与torchaudio兼容）
-# 使用共享库而非静态库
-RUN wget -q https://github.com/GyanD/codexffmpeg/releases/download/6.1.1/ffmpeg-6.1.1-full_build-shared.tar.xz && \
-    mkdir -p ffmpeg-shared && \
-    tar -xf ffmpeg-6.1.1-full_build-shared.tar.xz -C ffmpeg-shared --strip-components 1 && \
-    cp -r ffmpeg-shared/bin/* /usr/local/bin/ && \
-    cp -r ffmpeg-shared/lib/* /usr/local/lib/ && \
-    ldconfig && \
-    rm -rf ffmpeg-shared ffmpeg-6.1.1-full_build-shared.tar.xz
+# 添加FFmpeg官方仓库并安装最新版本
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# 如果默认ffmpeg版本不满足需求，使用静态构建版本
+RUN if ! ffmpeg -version | grep -q "version [6-9]"; then \
+    mkdir -p /tmp/ffmpeg && \
+    cd /tmp/ffmpeg && \
+    wget -q https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
+    tar xf ffmpeg-release-amd64-static.tar.xz --strip-components=1 && \
+    cp ffmpeg ffprobe /usr/local/bin/ && \
+    cd / && \
+    rm -rf /tmp/ffmpeg; \
+fi
 
 # 升级pip并安装依赖
 COPY requirements.txt .
@@ -37,11 +46,11 @@ ENV PORT=8080
 ENV FLASK_ENV=production
 
 # 验证FFmpeg版本和torchaudio后端
-RUN ffmpeg -version | grep "ffmpeg version 6" && \
+RUN ffmpeg -version && \
     python -c "import torchaudio; print(f'Available backends: {torchaudio.list_audio_backends()}')" || echo "FFmpeg backend not detected in torchaudio, audio processing may be affected"
 
 # 暴露端口
 EXPOSE 8080
 
 # 使用gunicorn运行应用
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 "run:app" 
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 "run:application" 

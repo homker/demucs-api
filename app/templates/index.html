@@ -453,7 +453,9 @@ formData.append('file', audioFile); // File对象
 formData.append('model', 'htdemucs');
 formData.append('stems', 'vocals,drums');
 
-fetch('/api/process', {
+// 使用BASE_URL作为API前缀
+const BASE_URL = window.location.pathname.split('/').filter(p => p)[0] || '';
+fetch(`${BASE_URL}/api/process`, {
   method: 'POST',
   body: formData
 })
@@ -485,7 +487,9 @@ fetch('/api/process', {
                 <p><strong>描述:</strong> 通过Server-Sent Events (SSE)接收实时进度更新</p>
                 <p><strong>返回:</strong> text/event-stream 格式的数据流</p>
                 <p><strong>使用示例 (JavaScript):</strong></p>
-                <pre>const eventSource = new EventSource('/api/progress/85f3da9c-7214-4892-b7bd-1e6e498c5d7b');
+                <pre>// 获取基础URL路径
+const BASE_URL = window.location.pathname.split('/').filter(p => p)[0] || '';
+const eventSource = new EventSource(`${BASE_URL}/api/progress/85f3da9c-7214-4892-b7bd-1e6e498c5d7b`);
 
 eventSource.onmessage = (event) => {
   const progress = JSON.parse(event.data);
@@ -508,8 +512,24 @@ eventSource.onmessage = (event) => {
   http://localhost:8080/api/download/85f3da9c-7214-4892-b7bd-1e6e498c5d7b \
   --output separated_tracks.zip</pre>
                 <p><strong>使用示例 (JavaScript):</strong></p>
-                <pre>// 使用浏览器直接下载
-window.location.href = '/api/download/85f3da9c-7214-4892-b7bd-1e6e498c5d7b';</pre>
+                <pre>// 示例: 下载处理结果
+const downloadResult = (jobId) => {
+  const BASE_URL = window.location.pathname.split('/').filter(p => p)[0] || '';
+  window.location.href = `${BASE_URL}/api/download/${jobId}`;
+  
+  // 或者使用fetch并保存文件
+  fetch(`${BASE_URL}/api/download/${jobId}`)
+    .then(response => response.blob())
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'separated_tracks.zip';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    });
+};</pre>
             </div>
             
             <div class="card">
@@ -552,10 +572,11 @@ window.location.href = '/api/download/85f3da9c-7214-4892-b7bd-1e6e498c5d7b';</pr
                             <li>
                                 <strong>方法1: 轮询</strong>
                                 <p>定期调用 <code>GET /api/status/{job_id}</code> 获取最新进度。</p>
-                                <pre>// 示例: 每2秒查询一次进度
+                                <pre>// 示例: 轮询方式获取进度
 const checkStatus = (jobId) => {
+  const BASE_URL = window.location.pathname.split('/').filter(p => p)[0] || '';
   const intervalId = setInterval(async () => {
-    const response = await fetch(`/api/status/${jobId}`);
+    const response = await fetch(`${BASE_URL}/api/status/${jobId}`);
     const data = await response.json();
     
     if (data.status === 'success') {
@@ -578,7 +599,8 @@ const checkStatus = (jobId) => {
                                 <p>建立 <code>GET /api/progress/{job_id}</code> SSE连接，接收实时进度更新。</p>
                                 <pre>// 示例: 建立SSE连接获取实时进度
 const connectToSSE = (jobId) => {
-  const eventSource = new EventSource(`/api/progress/${jobId}`);
+  const BASE_URL = window.location.pathname.split('/').filter(p => p)[0] || '';
+  const eventSource = new EventSource(`${BASE_URL}/api/progress/${jobId}`);
   
   eventSource.onmessage = (event) => {
     const progress = JSON.parse(event.data);
@@ -610,10 +632,11 @@ const connectToSSE = (jobId) => {
                         <p>任务完成后调用 <code>GET /api/download/{job_id}</code> 下载分离的音轨。</p>
                         <pre>// 示例: 下载处理结果
 const downloadResult = (jobId) => {
-  window.location.href = `/api/download/${jobId}`;
+  const BASE_URL = window.location.pathname.split('/').filter(p => p)[0] || '';
+  window.location.href = `${BASE_URL}/api/download/${jobId}`;
   
   // 或者使用fetch并保存文件
-  fetch(`/api/download/${jobId}`)
+  fetch(`${BASE_URL}/api/download/${jobId}`)
     .then(response => response.blob())
     .then(blob => {
       const url = window.URL.createObjectURL(blob);
@@ -631,8 +654,9 @@ const downloadResult = (jobId) => {
                         <p>下载完成后调用 <code>DELETE /api/cleanup/{job_id}</code> 清理服务器上的临时文件。</p>
                         <pre>// 示例: 清理任务资源
 const cleanupResources = async (jobId) => {
+  const BASE_URL = window.location.pathname.split('/').filter(p => p)[0] || '';
   try {
-    const response = await fetch(`/api/cleanup/${jobId}`, {
+    const response = await fetch(`${BASE_URL}/api/cleanup/${jobId}`, {
       method: 'DELETE'
     });
     const data = await response.json();
@@ -820,6 +844,9 @@ python run_tests.py</pre>
     </footer>
 
     <script>
+        // 设置API基础路径，从服务器端传递
+        const BASE_URL = "{{ base_url }}";
+        
         // DOM elements
         const form = document.getElementById('separationForm');
         const dropArea = document.getElementById('dropArea');
@@ -893,7 +920,7 @@ python run_tests.py</pre>
             
             try {
                 // Submit the processing request
-                const response = await fetch('/api/process', {
+                const response = await fetch(`${BASE_URL}/api/process`, {
                     method: 'POST',
                     body: formData
                 });
@@ -907,8 +934,8 @@ python run_tests.py</pre>
                 if (data.status === 'success') {
                     // Start listening for progress updates
                     const jobId = data.data.job_id;
-                    const progressUrl = data.data.progress_url;
-                    const downloadUrl = data.data.download_url;
+                    const progressUrl = `${BASE_URL}${data.data.progress_url}`;
+                    const downloadUrl = `${BASE_URL}${data.data.download_url}`;
                     
                     // Set up SSE for progress updates
                     const eventSource = new EventSource(progressUrl);
