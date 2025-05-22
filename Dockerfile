@@ -22,9 +22,10 @@ RUN mkdir -p uploads outputs
 # 设置环境变量
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8080
+ENV FLASK_ENV=production
 
 # 暴露端口
 EXPOSE 8080
 
 # 使用gunicorn运行应用
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 app:app 
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 "run:app" 
