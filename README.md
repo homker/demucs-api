@@ -20,56 +20,51 @@
 ### 前提条件
 
 - Python 3.8+
-- FFmpeg
+- FFmpeg 6.0+
 - Torch
 
-### 1. 克隆仓库
+### 快速安装
+
+1. 克隆仓库并安装依赖:
 
 ```bash
 git clone https://github.com/yourusername/demucs-webapp.git
 cd demucs-webapp
-```
-
-### 2. 创建虚拟环境
-
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# 或
-venv\Scripts\activate  # Windows
-```
-
-### 3. 安装依赖
-
-```bash
 pip install -r requirements.txt
 ```
 
-### 4. 安装 Demucs
-
-```bash
-pip install demucs
-```
-
-### 5. 配置环境变量
-
-复制`.env.example`为`.env`并根据需要修改配置：
+2. 设置环境变量:
 
 ```bash
 cp .env.example .env
+# 根据需要编辑.env文件
 ```
 
-### 6. 运行应用
+3. 运行应用:
 
 ```bash
 python run.py
 ```
 
-应用将在 http://localhost:5000 上运行。
+应用将在 http://localhost:5001 上运行。
+
+### Docker安装 (推荐)
+
+我们提供了Docker支持，可以简化安装过程:
+
+```bash
+# 使用docker-compose
+docker-compose up -d
+
+# 或使用部署脚本
+./deploy
+```
+
+详细的部署说明请参见 [部署指南](docs/deployment.md)。
 
 ## 使用方法
 
-1. 访问Web界面 (默认 http://localhost:5000)
+1. 访问Web界面 (默认 http://localhost:5001)
 2. 上传音频文件（支持拖放）
 3. 选择分离模型和需要提取的音轨
 4. 点击"开始分离"按钮
