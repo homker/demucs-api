@@ -10,7 +10,7 @@ class Config:
     OUTPUT_FOLDER = os.environ.get('OUTPUT_FOLDER', 'outputs')
     
     # 文件保留时间（分钟）
-    FILE_RETENTION_MINUTES = int(os.environ.get('FILE_RETENTION_MINUTES', 30))
+    FILE_RETENTION_MINUTES = int(os.environ.get('FILE_RETENTION_MINUTES', 300))
     
     # Demucs 相关配置
     DEFAULT_MODEL = 'htdemucs'
