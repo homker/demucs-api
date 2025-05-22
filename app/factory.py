@@ -1,14 +1,19 @@
 import os
 import logging
-from flask import Flask
+from flask import Flask, render_template
+from dotenv import load_dotenv
 
 from app import routes
 from app.config import Config
 from app.services.audio_separator import AudioSeparator
 from app.services.file_manager import FileManager
 
+# 加载环境变量
+load_dotenv()
+
 def create_app(config_class=Config):
-    """Application factory function"""
+    """Create and configure the Flask application"""
+    # Create Flask app
     app = Flask(__name__)
     
     # Load configuration
@@ -23,7 +28,7 @@ def create_app(config_class=Config):
     # Register blueprints
     register_blueprints(app)
     
-    # Add error handlers
+    # Register error handlers
     register_error_handlers(app)
     
     return app
@@ -50,6 +55,19 @@ def register_blueprints(app):
     """Register Flask blueprints"""
     # Import and register routes from routes module
     routes.init_app(app)
+    
+    # 主页路由
+    @app.route('/')
+    def index():
+        return render_template('index.html')
+    
+    # 调试页面路由
+    @app.route('/debug')
+    def debug():
+        return render_template('debug.html')
+        
+    app.logger.info("Main routes initialized")
+    
     app.logger.info("Application blueprints registered")
 
 def register_error_handlers(app):

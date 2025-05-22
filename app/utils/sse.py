@@ -36,13 +36,28 @@ class SSEManager:
                 return False
             
             task = self.tasks[job_id]
-            task['progress'] = min(max(0, progress), 100)  # Ensure progress is between 0-100
+            
+            # 确保进度值是整数
+            try:
+                progress_value = int(progress)
+            except (TypeError, ValueError):
+                # 如果转换失败，设置为0
+                progress_value = 0
+                
+            task['progress'] = min(max(0, progress_value), 100)  # Ensure progress is between 0-100
             
             if message:
                 task['message'] = message
             
+            # 修复状态文本问题：如果status包含百分比信息，提取纯状态文本
             if status:
-                task['status'] = status
+                # 检查状态是否包含百分比信息 如 "正在处理音频 (61%)"
+                if isinstance(status, str) and '(' in status and '%' in status:
+                    # 提取纯文本部分
+                    status_text = status.split('(')[0].strip()
+                    task['status'] = status_text
+                else:
+                    task['status'] = status
                 
             if result_file:
                 task['result_file'] = result_file
@@ -50,7 +65,7 @@ class SSEManager:
             task['last_update'] = time.time()
             
             # If task is complete, update status
-            if progress >= 100 and status != 'error':
+            if task['progress'] >= 100 and status != 'error':
                 task['status'] = 'completed'
                 if not message:
                     task['message'] = 'Task completed'

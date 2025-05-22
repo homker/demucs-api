@@ -114,6 +114,9 @@ class FileManager:
             zip_filename = f"demucs_output_{job_id}.zip"
             zip_path = os.path.join(self.output_folder, zip_filename)
             
+            # 确保输出目录存在
+            os.makedirs(os.path.dirname(zip_path), exist_ok=True)
+            
             # Create ZIP file
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 for file_info in files:
@@ -123,8 +126,10 @@ class FileManager:
                     if os.path.isfile(file_path):
                         zipf.write(file_path, arcname=arcname)
             
-            logger.info(f"Created ZIP file: {zip_path}")
-            return zip_path
+            # 返回绝对路径
+            abs_zip_path = os.path.abspath(zip_path)
+            logger.info(f"Created ZIP file: {zip_path}, 绝对路径: {abs_zip_path}")
+            return abs_zip_path
         except Exception as e:
             logger.error(f"Error creating ZIP file: {str(e)}")
             return None

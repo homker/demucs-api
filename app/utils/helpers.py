@@ -74,9 +74,34 @@ def create_file_response(file_path, download_name=None, cleanup_id=None):
     - Response: File download response
     """
     try:
+        # 确保文件路径正确，修复路径问题
+        # 如果文件不存在，检查相对路径
+        if not os.path.isfile(file_path):
+            # 尝试查找相对于项目根目录的路径
+            base_dir = current_app.config.get('BASE_DIR', os.getcwd())
+            alt_path = os.path.join(base_dir, file_path)
+            
+            # 如果还找不到，尝试查找相对于当前工作目录的路径
+            if not os.path.isfile(alt_path):
+                alt_path = os.path.join(os.getcwd(), file_path)
+            
+            # 如果找到了替代路径，使用它
+            if os.path.isfile(alt_path):
+                logger.info(f"使用替代文件路径: {alt_path} 替代 {file_path}")
+                file_path = alt_path
+            else:
+                # 记录可能的路径
+                logger.error(f"无法找到文件: 原始路径={file_path}, 替代路径1={os.path.join(base_dir, file_path)}, 替代路径2={os.path.join(os.getcwd(), file_path)}")
+                # 检查输出目录中的文件
+                output_dir = current_app.config.get('OUTPUT_FOLDER', 'outputs')
+                output_path = os.path.join(os.getcwd(), output_dir)
+                logger.info(f"检查输出目录: {output_path}, 文件列表: {os.listdir(output_path) if os.path.exists(output_path) else '目录不存在'}")
+                raise FileNotFoundError(f"文件不存在: {file_path}")
+        
         if not download_name:
             download_name = os.path.basename(file_path)
         
+        logger.info(f"发送文件: {file_path}, 下载名称: {download_name}")
         response = send_file(
             file_path,
             as_attachment=True,
@@ -107,7 +132,7 @@ def allowed_file(filename):
         return False
         
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in current_app.config.ALLOWED_EXTENSIONS
+           filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
 
 def random_string(length=8):
     """

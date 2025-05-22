@@ -57,7 +57,7 @@ def process_audio():
     
     try:
         # Get parameters
-        model_name = request.form.get('model', current_app.config.DEFAULT_MODEL)
+        model_name = request.form.get('model', current_app.config['DEFAULT_MODEL'])
         stems_param = request.form.get('stems', None)
         
         # Parse stems if provided
@@ -79,39 +79,48 @@ def process_audio():
         # Register task in SSE manager
         sse_manager.create_task(job_id)
         
+        # 创建应用上下文副本以在线程中使用
+        app = current_app._get_current_object()
+        
         # Start audio separation in a background thread
         def process_task():
-            try:
-                # Define progress callback
-                def update_progress(job_id, progress, message, status=None, result_file=None):
-                    sse_manager.update_progress(job_id, progress, message, status, result_file)
-                
-                # Run audio separation
-                result = current_app.audio_separator.separate_track(
-                    input_file=file_path,
-                    output_dir=job_output_dir,
-                    model_name=model_name,
-                    stems=stems,
-                    progress_callback=lambda p, m, s=None, r=None: update_progress(job_id, p, m, s, r)
-                )
-                
-                # Create ZIP of output files
-                zip_path = current_app.file_manager.create_zip_from_files(result['files'], job_id)
-                
-                # Update task with completion and result file
-                sse_manager.update_progress(
-                    job_id, 
-                    100, 
-                    "Processing completed", 
-                    "completed",
-                    zip_path
-                )
-                
-                logger.info(f"Audio separation completed for job: {job_id}")
-                
-            except Exception as e:
-                logger.error(f"Error processing audio: {str(e)}")
-                sse_manager.set_error(job_id, f"Error: {str(e)}")
+            with app.app_context():
+                try:
+                    # Define progress callback
+                    def update_progress(progress, message, status=None, result_file=None):
+                        sse_manager.update_progress(job_id, progress, message, status, result_file)
+                    
+                    # Run audio separation
+                    result = app.audio_separator.separate_track(
+                        input_file=file_path,
+                        output_dir=job_output_dir,
+                        model_name=model_name,
+                        stems=stems,
+                        progress_callback=update_progress
+                    )
+                    
+                    # Create ZIP of output files
+                    zip_path = app.file_manager.create_zip_from_files(result['files'], job_id)
+                    
+                    # Update task with completion and result file
+                    sse_manager.update_progress(
+                        job_id, 
+                        100, 
+                        "Processing completed", 
+                        "completed",
+                        zip_path
+                    )
+                    
+                    logger.info(f"Audio separation completed for job: {job_id}")
+                    
+                except Exception as e:
+                    logger.error(f"Error processing audio: {str(e)}")
+                    # 将错误详细信息写入文件，方便调试
+                    with open("error_details.txt", "w") as f:
+                        import traceback
+                        f.write(f"Error: {str(e)}\n")
+                        f.write(traceback.format_exc())
+                    sse_manager.set_error(job_id, f"Error: {str(e)}")
         
         # Run in background
         import threading
@@ -146,9 +155,10 @@ def get_status(job_id):
 def get_progress(job_id):
     """Get progress updates using Server-Sent Events (SSE)"""
     def generate():
-        return sse_manager.stream_progress(job_id)
+        # 直接返回生成器，而不是函数
+        yield from sse_manager.stream_progress(job_id)
     
-    return create_sse_response(generate)
+    return create_sse_response(generate())
 
 @api_bp.route('/download/<job_id>', methods=['GET'])
 def download_result(job_id):

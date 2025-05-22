@@ -235,6 +235,24 @@
             padding: 20px 0;
             margin-top: 40px;
         }
+        
+        .main-nav {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            margin: 0 0.5rem;
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -242,6 +260,10 @@
         <div class="container">
             <h1>Demucs 音频分离工具</h1>
             <p>基于深度学习的高质量音频源分离系统</p>
+            <nav class="main-nav">
+                <a href="#" class="nav-link">音频分离工具</a>
+                <a href="#api-documentation" class="nav-link">API接口文档</a>
+            </nav>
         </div>
     </header>
     
@@ -358,6 +380,153 @@
                 <li>处理大型文件可能需要较长时间，尤其是使用高质量模型时。</li>
                 <li>音频质量较好的文件通常能获得更好的分离效果。</li>
             </ul>
+            
+            <h2 id="api-documentation">API接口文档</h2>
+            <p>本服务提供REST API接口，方便开发者集成音频分离功能到自己的应用中。所有API返回JSON格式的响应。</p>
+            
+            <div class="tip">
+                <strong>开发者指南：</strong> 以下API接口可用于集成Demucs音频分离功能到您自己的应用程序中。
+                处理过程是异步的，提交任务后您会获得一个任务ID，可以用它来获取进度更新和最终下载分离结果。
+                所有响应都采用统一的JSON格式，包含<code>status</code>和<code>data</code>两个主要字段。
+            </div>
+            
+            <div class="card">
+                <h3>1. 获取可用模型</h3>
+                <p><strong>端点:</strong> <code>GET /api/models</code></p>
+                <p><strong>描述:</strong> 返回系统中可用的所有音频分离模型列表</p>
+                <p><strong>示例响应:</strong></p>
+                <pre>{
+  "status": "success",
+  "data": {
+    "models": [
+      {
+        "name": "htdemucs",
+        "description": "Hybrid Transformer Demucs",
+        "stems": ["vocals", "drums", "bass", "other"]
+      },
+      {
+        "name": "htdemucs_ft",
+        "description": "Fine-tuned Hybrid Transformer Demucs",
+        "stems": ["vocals", "drums", "bass", "other"]
+      },
+      ...
+    ]
+  }
+}</pre>
+                <p><strong>使用示例 (cURL):</strong></p>
+                <pre>curl -X GET http://localhost:8080/api/models</pre>
+            </div>
+            
+            <div class="card">
+                <h3>2. 提交音频处理任务</h3>
+                <p><strong>端点:</strong> <code>POST /api/process</code></p>
+                <p><strong>描述:</strong> 上传音频文件并开始分离处理</p>
+                <p><strong>请求参数:</strong></p>
+                <ul>
+                    <li><code>file</code> - 要处理的音频文件 (必需，multipart/form-data)</li>
+                    <li><code>model</code> - 要使用的模型名称 (可选，默认: htdemucs)</li>
+                    <li><code>stems</code> - 要分离的音轨，逗号分隔 (可选，默认: 全部音轨)</li>
+                </ul>
+                <p><strong>示例响应:</strong></p>
+                <pre>{
+  "status": "success",
+  "data": {
+    "job_id": "85f3da9c-7214-4892-b7bd-1e6e498c5d7b",
+    "message": "Audio separation started",
+    "status_url": "/api/status/85f3da9c-7214-4892-b7bd-1e6e498c5d7b",
+    "progress_url": "/api/progress/85f3da9c-7214-4892-b7bd-1e6e498c5d7b",
+    "download_url": "/api/download/85f3da9c-7214-4892-b7bd-1e6e498c5d7b"
+  }
+}</pre>
+                <p><strong>使用示例 (cURL):</strong></p>
+                <pre>curl -X POST \
+  http://localhost:8080/api/process \
+  -F "file=@song.mp3" \
+  -F "model=htdemucs" \
+  -F "stems=vocals,drums"</pre>
+                <p><strong>使用示例 (JavaScript):</strong></p>
+                <pre>const formData = new FormData();
+formData.append('file', audioFile); // File对象
+formData.append('model', 'htdemucs');
+formData.append('stems', 'vocals,drums');
+
+fetch('/api/process', {
+  method: 'POST',
+  body: formData
+})
+.then(response => response.json())
+.then(data => console.log(data));</pre>
+            </div>
+            
+            <div class="card">
+                <h3>3. 获取任务状态</h3>
+                <p><strong>端点:</strong> <code>GET /api/status/{job_id}</code></p>
+                <p><strong>描述:</strong> 获取指定任务的当前状态和进度</p>
+                <p><strong>示例响应:</strong></p>
+                <pre>{
+  "status": "success",
+  "data": {
+    "job_id": "85f3da9c-7214-4892-b7bd-1e6e498c5d7b",
+    "progress": 65,
+    "message": "正在处理音频...",
+    "status": "processing"
+  }
+}</pre>
+                <p><strong>使用示例 (cURL):</strong></p>
+                <pre>curl -X GET http://localhost:8080/api/status/85f3da9c-7214-4892-b7bd-1e6e498c5d7b</pre>
+            </div>
+            
+            <div class="card">
+                <h3>4. 实时进度更新</h3>
+                <p><strong>端点:</strong> <code>GET /api/progress/{job_id}</code></p>
+                <p><strong>描述:</strong> 通过Server-Sent Events (SSE)接收实时进度更新</p>
+                <p><strong>返回:</strong> text/event-stream 格式的数据流</p>
+                <p><strong>使用示例 (JavaScript):</strong></p>
+                <pre>const eventSource = new EventSource('/api/progress/85f3da9c-7214-4892-b7bd-1e6e498c5d7b');
+
+eventSource.onmessage = (event) => {
+  const progress = JSON.parse(event.data);
+  console.log(`进度: ${progress.progress}%, 消息: ${progress.message}`);
+  
+  // 当任务完成或出错时关闭连接
+  if (progress.status === 'completed' || progress.status === 'error') {
+    eventSource.close();
+  }
+};</pre>
+            </div>
+            
+            <div class="card">
+                <h3>5. 下载处理结果</h3>
+                <p><strong>端点:</strong> <code>GET /api/download/{job_id}</code></p>
+                <p><strong>描述:</strong> 下载已完成任务的分离音轨（ZIP格式）</p>
+                <p><strong>返回:</strong> application/zip 文件</p>
+                <p><strong>使用示例 (cURL):</strong></p>
+                <pre>curl -X GET \
+  http://localhost:8080/api/download/85f3da9c-7214-4892-b7bd-1e6e498c5d7b \
+  --output separated_tracks.zip</pre>
+                <p><strong>使用示例 (JavaScript):</strong></p>
+                <pre>// 使用浏览器直接下载
+window.location.href = '/api/download/85f3da9c-7214-4892-b7bd-1e6e498c5d7b';</pre>
+            </div>
+            
+            <div class="card">
+                <h3>6. 清理任务文件</h3>
+                <p><strong>端点:</strong> <code>DELETE /api/cleanup/{job_id}</code></p>
+                <p><strong>描述:</strong> 清理指定任务的相关文件，释放服务器存储空间</p>
+                <p><strong>示例响应:</strong></p>
+                <pre>{
+  "status": "success",
+  "data": {
+    "message": "任务文件已成功清理"
+  }
+}</pre>
+                <p><strong>使用示例 (cURL):</strong></p>
+                <pre>curl -X DELETE http://localhost:8080/api/cleanup/85f3da9c-7214-4892-b7bd-1e6e498c5d7b</pre>
+            </div>
+            
+            <div class="tip">
+                <strong>注意:</strong> 所有API请求返回的HTTP状态码为200（成功）或4xx/5xx（错误）。响应体中的status字段会指示具体操作是成功还是失败。系统会在一定时间后（默认1小时）自动清理未被下载的文件。
+            </div>
         </div>
     </div>
 
@@ -461,37 +630,61 @@
                     // Set up SSE for progress updates
                     const eventSource = new EventSource(progressUrl);
                     
+                    eventSource.onopen = (event) => {
+                        console.log('SSE连接已建立');
+                    };
+                    
                     eventSource.onmessage = (event) => {
-                        const progress = JSON.parse(event.data);
-                        
-                        // Update progress bar
-                        progressFill.style.width = `${progress.progress}%`;
-                        progressText.textContent = `${progress.progress}% - ${progress.message}`;
-                        
-                        // Handle completion
-                        if (progress.status === 'completed') {
-                            eventSource.close();
-                            statusMessage.textContent = '处理完成！';
-                            statusMessage.className = 'status-message status-success';
+                        try {
+                            console.log('SSE原始数据:', event.data);
+                            const progress = JSON.parse(event.data);
                             
-                            // Show download link
-                            downloadLink.href = downloadUrl;
-                            downloadLink.style.display = 'inline-block';
+                            console.log('进度更新:', progress);
                             
-                            // Reset form
-                            submitBtn.disabled = false;
-                        }
-                        
-                        // Handle error
-                        if (progress.status === 'error') {
-                            eventSource.close();
-                            statusMessage.textContent = progress.message;
+                            // 基本数据验证
+                            const progressValue = typeof progress.progress === 'number' ? 
+                                progress.progress : parseInt(progress.progress, 10) || 0;
+                            
+                            // 更新进度条
+                            progressFill.style.width = `${progressValue}%`;
+                            
+                            // 构建显示文本
+                            const displayText = progress.message ? 
+                                `${progressValue}% - ${progress.message}` : 
+                                `${progressValue}%`;
+                                
+                            progressText.textContent = displayText;
+                            
+                            // Handle completion
+                            if (progress.status === 'completed' || progress.status === '音频分离完成') {
+                                eventSource.close();
+                                statusMessage.textContent = '处理完成！';
+                                statusMessage.className = 'status-message status-success';
+                                
+                                // Show download link
+                                downloadLink.href = downloadUrl;
+                                downloadLink.style.display = 'inline-block';
+                                
+                                // Reset form
+                                submitBtn.disabled = false;
+                            }
+                            
+                            // Handle error
+                            if (progress.status === 'error') {
+                                eventSource.close();
+                                statusMessage.textContent = progress.message || '处理出错';
+                                statusMessage.className = 'status-message status-error';
+                                submitBtn.disabled = false;
+                            }
+                        } catch (error) {
+                            console.error('解析SSE消息出错:', error);
+                            statusMessage.textContent = `解析进度更新出错: ${error.message}`;
                             statusMessage.className = 'status-message status-error';
-                            submitBtn.disabled = false;
                         }
                     };
                     
-                    eventSource.onerror = () => {
+                    eventSource.onerror = (error) => {
+                        console.error('SSE连接错误:', error);
                         eventSource.close();
                         statusMessage.textContent = '接收进度更新时出错';
                         statusMessage.className = 'status-message status-error';

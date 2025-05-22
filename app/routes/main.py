@@ -16,7 +16,7 @@ def index():
 @main_bp.route('/health')
 def health():
     """Health check endpoint"""
-    return {'status': 'ok'}
+    return create_success_response({'status': 'ok'})
 
 def init_app(app):
     """Initialize main routes"""

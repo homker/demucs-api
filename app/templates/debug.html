@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSE调试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #3498db;
+        }
+        
+        .card {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .log-area {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        
+        .event {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .event-time {
+            color: #888;
+            font-size: 0.8em;
+        }
+        
+        .event-success {
+            color: #28a745;
+        }
+        
+        .event-error {
+            color: #dc3545;
+        }
+        
+        .progress-container {
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            height: 20px;
+            background-color: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .progress-text {
+            text-align: center;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>SSE进度更新调试工具</h1>
+    
+    <div class="card">
+        <h2>连接测试</h2>
+        <div class="input-group">
+            <label for="jobIdInput">任务ID:</label>
+            <input type="text" id="jobIdInput" placeholder="输入要监控的任务ID">
+        </div>
+        <button id="connectBtn">连接SSE</button>
+        <button id="clearBtn">清空日志</button>
+        
+        <div class="progress-container">
+            <h3>进度:</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">0%</div>
+        </div>
+        
+        <h3>事件日志:</h3>
+        <div class="log-area" id="logArea"></div>
+    </div>
+    
+    <script>
+        // DOM 元素
+        const jobIdInput = document.getElementById('jobIdInput');
+        const connectBtn = document.getElementById('connectBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const logArea = document.getElementById('logArea');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        
+        // 当前 EventSource 实例
+        let eventSource = null;
+        
+        // 添加日志条目
+        function addLogEntry(message, type = 'info') {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString() + '.' + now.getMilliseconds().toString().padStart(3, '0');
+            
+            const entry = document.createElement('div');
+            entry.className = `event event-${type}`;
+            entry.innerHTML = `<span class="event-time">[${timeStr}]</span> ${message}`;
+            
+            logArea.appendChild(entry);
+            logArea.scrollTop = logArea.scrollHeight; // 自动滚动到底部
+        }
+        
+        // 连接到SSE
+        function connectSSE(jobId) {
+            // 关闭现有连接
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            
+            if (!jobId) {
+                addLogEntry('请输入有效的任务ID', 'error');
+                return;
+            }
+            
+            addLogEntry(`正在连接到任务: ${jobId}...`);
+            
+            // 创建新的SSE连接
+            const progressUrl = `/api/progress/${jobId}`;
+            eventSource = new EventSource(progressUrl);
+            
+            // 监听连接开启
+            eventSource.onopen = (event) => {
+                addLogEntry('SSE连接已建立', 'success');
+                connectBtn.textContent = '断开连接';
+            };
+            
+            // 监听消息
+            eventSource.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    // 在控制台也输出原始数据，便于调试
+                    console.log('SSE事件数据:', data);
+                    
+                    // 记录到日志区域
+                    addLogEntry(`收到更新: ${JSON.stringify(data)}`);
+                    
+                    // 基本数据验证
+                    const progressValue = typeof data.progress === 'number' ? 
+                        data.progress : parseInt(data.progress, 10) || 0;
+                    
+                    // 记录提取的进度值
+                    addLogEntry(`进度值: ${progressValue}%`);
+                    
+                    // 更新进度条
+                    progressFill.style.width = `${progressValue}%`;
+                    
+                    // 构建显示文本
+                    const displayText = data.message ? 
+                        `${progressValue}% - ${data.message}` : 
+                        `${progressValue}%`;
+                        
+                    progressText.textContent = displayText;
+                    
+                    // 处理完成或错误状态
+                    if (data.status === 'completed' || data.status === '音频分离完成') {
+                        addLogEntry(`任务完成: ${data.message || ''}`, 'success');
+                        
+                        // 自动关闭连接
+                        eventSource.close();
+                        eventSource = null;
+                        connectBtn.textContent = '连接SSE';
+                    } else if (data.status === 'error') {
+                        addLogEntry(`任务出错: ${data.message || ''}`, 'error');
+                        
+                        // 自动关闭连接
+                        eventSource.close();
+                        eventSource = null;
+                        connectBtn.textContent = '连接SSE';
+                    }
+                } catch (error) {
+                    addLogEntry(`解析事件数据时出错: ${error.message}`, 'error');
+                    console.error('解析SSE数据错误:', error);
+                }
+            };
+            
+            // 监听错误
+            eventSource.onerror = (error) => {
+                addLogEntry(`SSE连接错误: ${error.type}`, 'error');
+                console.error('SSE错误:', error);
+                
+                // 关闭连接
+                eventSource.close();
+                eventSource = null;
+                connectBtn.textContent = '连接SSE';
+            };
+        }
+        
+        // 连接/断开按钮点击事件
+        connectBtn.addEventListener('click', () => {
+            if (eventSource) {
+                // 断开连接
+                eventSource.close();
+                eventSource = null;
+                connectBtn.textContent = '连接SSE';
+                addLogEntry('已断开SSE连接');
+            } else {
+                // 建立连接
+                const jobId = jobIdInput.value.trim();
+                connectSSE(jobId);
+            }
+        });
+        
+        // 清空日志按钮点击事件
+        clearBtn.addEventListener('click', () => {
+            logArea.innerHTML = '';
+            addLogEntry('日志已清空');
+        });
+        
+        // 初始日志
+        addLogEntry('调试工具已初始化。请输入任务ID并点击"连接SSE"按钮开始测试。');
+    </script>
+</body>
+</html> 
