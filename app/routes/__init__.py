@@ -1,7 +1,9 @@
-from app.routes.main import main_bp
-from app.routes.api import api_bp
+from app.routes import main, api
 
-def register_blueprints(app):
-    """注册所有蓝图"""
-    app.register_blueprint(main_bp)
-    app.register_blueprint(api_bp) 
+def init_app(app):
+    """Initialize all route blueprints"""
+    # Register main routes
+    main.init_app(app)
+    
+    # Register API routes
+    api.init_app(app) 

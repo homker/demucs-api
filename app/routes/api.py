@@ -1,137 +1,239 @@
 import os
+import uuid
 import logging
-from flask import Blueprint, request, current_app, after_this_request
+from flask import Blueprint, request, send_file, jsonify, current_app
+from werkzeug.utils import secure_filename
 
-from app.utils.helpers import (
-    validate_request, process_boolean_param, create_error_response,
-    create_success_response, create_file_response, generate_job_id
+from app.utils import (
+    allowed_file, 
+    generate_job_id, 
+    validate_request, 
+    process_boolean_param, 
+    create_error_response, 
+    create_success_response, 
+    create_file_response, 
+    SSEManager, 
+    create_sse_response
 )
 
 logger = logging.getLogger(__name__)
 
-# 创建蓝图
+# Create Blueprint
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
-@api_bp.route('/health', methods=['GET'])
-def health_check():
-    """健康检查接口"""
-    return create_success_response(message="服务正常运行")
+# Initialize SSE manager
+sse_manager = SSEManager()
 
-@api_bp.route('/separate', methods=['POST'])
-def separate_audio():
+@api_bp.route('/models', methods=['GET'])
+def list_models():
+    """Get list of available Demucs models"""
+    try:
+        audio_separator = current_app.audio_separator
+        available_models = audio_separator.get_available_models()
+        
+        return create_success_response({
+            'models': available_models
+        })
+    except Exception as e:
+        logger.error(f"Error getting models: {str(e)}")
+        return create_error_response(f"Failed to get available models: {str(e)}")
+
+@api_bp.route('/process', methods=['POST'])
+def process_audio():
     """
-    音频分离API接口
-    - 上传一个音频文件
-    - 返回分离后的音频文件（压缩包格式）
+    Start audio separation process
+    Returns a job ID that can be used to track progress and download results
     """
-    # 验证请求
-    valid, data, error = validate_request()
-    if not valid:
-        return create_error_response(error)
+    # Validate request
+    if not validate_request(request, ['file']):
+        return create_error_response("No file provided")
     
-    # 获取文件和参数
-    file = data['file']
-    model_name = data.get('model', current_app.config['DEFAULT_MODEL'])
-    two_stems = data.get('two_stems', None)
+    # Get uploaded file
+    file = request.files['file']
     
-    # 分段长度，根据模型类型设置默认值
-    segment = data.get('segment', None)
-    
-    # 处理布尔参数
-    mp3 = process_boolean_param(data.get('mp3', 'false'))
-    mp3_bitrate = data.get('mp3_bitrate', str(current_app.config['DEFAULT_MP3_BITRATE']))
+    # Check if file type is allowed
+    if not file or not allowed_file(file.filename):
+        return create_error_response("Invalid file format. Supported formats: mp3, wav, flac, ogg, m4a, mp4")
     
     try:
-        # 生成唯一ID作为处理任务标识
+        # Get parameters
+        model_name = request.form.get('model', current_app.config.DEFAULT_MODEL)
+        stems_param = request.form.get('stems', None)
+        
+        # Parse stems if provided
+        stems = None
+        if stems_param:
+            stems = [s.strip() for s in stems_param.split(',')]
+        
+        # Generate job ID
         job_id = generate_job_id()
         
-        # 获取服务实例
-        file_manager = current_app.file_manager
-        audio_separator = current_app.audio_separator
+        # Create job output directory
+        job_output_dir = current_app.file_manager.create_job_output_directory(job_id)
         
-        # 创建输出目录
-        output_path = file_manager.get_output_path(job_id)
-        os.makedirs(output_path, exist_ok=True)
+        # Save uploaded file
+        filename, file_path = current_app.file_manager.save_uploaded_file(file)
         
-        # 保存上传的文件
-        file_path = file_manager.save_uploaded_file(file, job_id)
+        logger.info(f"Starting audio separation process for job: {job_id}")
         
-        # 调用音频分离服务
-        success, model_name, model_output_dir = audio_separator.separate_audio(
-            file_path=file_path,
-            model_name=model_name,
-            two_stems=two_stems,
-            segment=segment,
-            mp3=mp3,
-            mp3_bitrate=mp3_bitrate,
-            output_path=output_path
-        )
+        # Register task in SSE manager
+        sse_manager.create_task(job_id)
         
-        if not success or not model_output_dir:
-            return create_error_response('音频分离失败', 500)
-        
-        # 查找音轨输出目录
-        track_output_dir = audio_separator.find_track_output_dir(model_output_dir, file.filename)
-        
-        if not track_output_dir:
-            return create_error_response('处理完成但找不到对应音轨输出文件夹', 500)
-        
-        # 创建ZIP文件
-        filename_without_ext = os.path.splitext(file.filename)[0]
-        zip_filename = f"{filename_without_ext}_separated.zip"
-        zip_path = file_manager.create_zip_from_directory(track_output_dir, output_path, zip_filename)
-        
-        if not zip_path:
-            return create_error_response('ZIP文件创建失败', 500)
-        
-        # 在请求结束后清理上传的原始文件（但保留ZIP文件供下载）
-        @after_this_request
-        def cleanup_after_download(response):
+        # Start audio separation in a background thread
+        def process_task():
             try:
-                # 清理上传目录中的原始音频文件
-                upload_path = file_manager.get_upload_path(job_id)
-                if os.path.exists(upload_path):
-                    logger.info(f"清理上传目录: {upload_path}")
-                    file_manager._cleanup_directory(upload_path, float('inf'))  # 立即清理
+                # Define progress callback
+                def update_progress(job_id, progress, message, status=None, result_file=None):
+                    sse_manager.update_progress(job_id, progress, message, status, result_file)
                 
-                # 清理分离后的文件夹（但保留ZIP文件）
-                separated_dir = os.path.join(os.getcwd(), 'separated')
-                if os.path.exists(separated_dir):
-                    model_dir = os.path.join(separated_dir, model_name)
-                    if os.path.exists(model_dir):
-                        for item in os.listdir(model_dir):
-                            item_path = os.path.join(model_dir, item)
-                            if filename_without_ext.lower() in item.lower() and os.path.isdir(item_path):
-                                logger.info(f"删除分离后的音轨目录: {item_path}")
-                                file_manager._cleanup_directory(item_path, float('inf'))  # 立即清理
+                # Run audio separation
+                result = current_app.audio_separator.separate_track(
+                    input_file=file_path,
+                    output_dir=job_output_dir,
+                    model_name=model_name,
+                    stems=stems,
+                    progress_callback=lambda p, m, s=None, r=None: update_progress(job_id, p, m, s, r)
+                )
+                
+                # Create ZIP of output files
+                zip_path = current_app.file_manager.create_zip_from_files(result['files'], job_id)
+                
+                # Update task with completion and result file
+                sse_manager.update_progress(
+                    job_id, 
+                    100, 
+                    "Processing completed", 
+                    "completed",
+                    zip_path
+                )
+                
+                logger.info(f"Audio separation completed for job: {job_id}")
                 
             except Exception as e:
-                logger.error(f"清理文件时出错: {str(e)}", exc_info=True)
-            
-            return response
+                logger.error(f"Error processing audio: {str(e)}")
+                sse_manager.set_error(job_id, f"Error: {str(e)}")
         
-        # 创建文件下载响应
-        return create_file_response(zip_path, zip_filename, job_id)
+        # Run in background
+        import threading
+        thread = threading.Thread(target=process_task)
+        thread.daemon = True
+        thread.start()
+        
+        # Return job ID for status tracking
+        return create_success_response({
+            'job_id': job_id,
+            'message': 'Audio separation started',
+            'status_url': f"/api/status/{job_id}",
+            'progress_url': f"/api/progress/{job_id}",
+            'download_url': f"/api/download/{job_id}"
+        })
         
     except Exception as e:
-        logger.error(f"处理错误: {str(e)}", exc_info=True)
-        return create_error_response(f'处理错误: {str(e)}', 500)
+        logger.error(f"Error starting audio separation: {str(e)}")
+        return create_error_response(f"Failed to start audio separation: {str(e)}")
 
-@api_bp.route('/cleanup/<cleanup_id>', methods=['DELETE'])
-def cleanup_files(cleanup_id):
-    """
-    清理特定任务的临时文件
-    - cleanup_id: 任务ID，与X-Cleanup-ID头信息对应
-    """
+@api_bp.route('/status/<job_id>', methods=['GET'])
+def get_status(job_id):
+    """Get current status of a processing job"""
+    progress = sse_manager.get_progress(job_id)
+    
+    if not progress:
+        return create_error_response("Job not found", status_code=404)
+    
+    return create_success_response(progress)
+
+@api_bp.route('/progress/<job_id>', methods=['GET'])
+def get_progress(job_id):
+    """Get progress updates using Server-Sent Events (SSE)"""
+    def generate():
+        return sse_manager.stream_progress(job_id)
+    
+    return create_sse_response(generate)
+
+@api_bp.route('/download/<job_id>', methods=['GET'])
+def download_result(job_id):
+    """Download the result of a completed audio separation job"""
     try:
-        file_manager = current_app.file_manager
-        success, message = file_manager.cleanup_files(cleanup_id)
+        # Check job status
+        progress = sse_manager.get_progress(job_id)
+        
+        if not progress:
+            return create_error_response("Job not found", status_code=404)
+        
+        if progress['status'] != 'completed':
+            return create_error_response(
+                f"Job is not completed yet. Current status: {progress['status']}", 
+                status_code=400
+            )
+        
+        # Get result file path
+        result_file = sse_manager.get_result_file(job_id)
+        
+        if not result_file or not os.path.isfile(result_file):
+            return create_error_response("Result file not found", status_code=404)
+        
+        # Return file
+        return create_file_response(result_file)
+        
+    except Exception as e:
+        logger.error(f"Error downloading result: {str(e)}")
+        return create_error_response(f"Failed to download result: {str(e)}")
+
+@api_bp.route('/cleanup/<job_id>', methods=['DELETE'])
+def cleanup_files(job_id):
+    """清理特定任务的文件"""
+    try:
+        # 检查任务是否存在
+        progress = sse_manager.get_progress(job_id)
+        
+        if progress:
+            # 从SSE管理器中移除任务
+            sse_manager.clean_task(job_id)
+        
+        # 清理任务相关的文件
+        success, message = current_app.file_manager.cleanup_job_files(job_id)
         
         if success:
-            return create_success_response(message=message)
+            return create_success_response({
+                'message': message
+            })
         else:
-            return create_error_response(message, 400)
-            
+            return create_error_response(message, status_code=400)
+        
     except Exception as e:
-        logger.error(f"清理文件出错: {str(e)}", exc_info=True)
-        return create_error_response(f"清理文件出错: {str(e)}", 500) 
+        logger.error(f"清理文件失败: {str(e)}")
+        return create_error_response(f"清理文件失败: {str(e)}")
+
+@api_bp.route('/admin/cleanup', methods=['POST'])
+def admin_cleanup():
+    """清理所有文件（需要管理员令牌）"""
+    try:
+        # 验证管理员令牌
+        admin_token = request.headers.get('X-Admin-Token')
+        
+        if not admin_token or admin_token != current_app.config['ADMIN_TOKEN']:
+            return create_error_response("无效的管理员令牌", status_code=403)
+        
+        # 清理所有SSE任务
+        task_count = len(sse_manager.tasks)
+        sse_manager.tasks.clear()
+        
+        # 清理所有文件
+        success, message, stats = current_app.file_manager.cleanup_all_files()
+        
+        if success:
+            return create_success_response({
+                'message': message,
+                'tasks_cleared': task_count,
+                'stats': stats
+            })
+        else:
+            return create_error_response(message, status_code=500)
+        
+    except Exception as e:
+        logger.error(f"清理所有文件失败: {str(e)}")
+        return create_error_response(f"清理所有文件失败: {str(e)}")
+
+def init_app(app):
+    app.register_blueprint(api_bp)
+    logger.info("API routes initialized") 

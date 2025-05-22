@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demucs 音频分离工具</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --bg-color: #f9f9f9;
+            --text-color: #333;
+            --code-bg: #f0f4f8;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0;
+            padding: 0; 
+            line-height: 1.6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        h1 { 
+            margin: 0;
+            font-size: 2.5rem;
+        }
+        
+        h2 { 
+            color: var(--secondary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+        }
+        
+        h3 {
+            color: var(--secondary-color);
+        }
+        
+        code { 
+            background-color: var(--code-bg); 
+            padding: 2px 5px; 
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+        }
+        
+        pre { 
+            background-color: var(--code-bg);
+            padding: 15px; 
+            border-radius: var(--border-radius);
+            overflow-x: auto;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--primary-color);
+            padding: 30px;
+            text-align: center;
+            border-radius: var(--border-radius);
+            background: rgba(52, 152, 219, 0.05);
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        select, input[type="file"] {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .progress-bar {
+            height: 20px;
+            background-color: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .progress-text {
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .status-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .download-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        
+        .download-link:hover {
+            background-color: #218838;
+        }
+        
+        .info-section {
+            margin-top: 40px;
+        }
+        
+        .model-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .model-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+            border-top: 4px solid var(--primary-color);
+        }
+        
+        .model-name {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .badge {
+            display: inline-block;
+            font-size: 0.8em;
+            background: #e8f4fd;
+            color: var(--primary-color);
+            padding: 3px 8px;
+            border-radius: 12px;
+            margin-right: 5px;
+        }
+        
+        .tip {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        
+        footer {
+            background-color: var(--secondary-color);
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Demucs 音频分离工具</h1>
+            <p>基于深度学习的高质量音频源分离系统</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="card">
+            <h2>音频分离工具</h2>
+            <p>上传音频文件（如MP3、WAV等），系统将自动分离成独立的音轨：人声、鼓点、贝斯和其他乐器。</p>
+            
+            <div class="tip">
+                <strong>提示：</strong> 支持的音频格式包括MP3、WAV、FLAC、OGG和M4A。处理大型文件可能需要较长时间，请耐心等待。
+            </div>
+            
+            <form id="separationForm">
+                <div class="upload-area" id="dropArea">
+                    <p>将音频文件拖放到此处，或点击选择文件</p>
+                    <input type="file" id="audioFile" name="file" accept=".mp3,.wav,.flac,.ogg,.m4a" style="display: none;">
+                </div>
+                
+                <div class="form-group">
+                    <label for="modelSelect">分离模型：</label>
+                    <select id="modelSelect" name="model">
+                        <option value="htdemucs" selected>htdemucs (默认模型，平衡质量和速度)</option>
+                        <option value="htdemucs_ft">htdemucs_ft (高质量，速度较慢)</option>
+                        <option value="htdemucs_6s">htdemucs_6s (6音轨，含钢琴和吉他)</option>
+                        <option value="mdx">mdx (平衡型)</option>
+                        <option value="mdx_q">mdx_q (快速模型)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="stemsSelect">提取音轨：</label>
+                    <select id="stemsSelect" name="stems" multiple>
+                        <option value="vocals" selected>人声 (Vocals)</option>
+                        <option value="drums" selected>鼓点 (Drums)</option>
+                        <option value="bass" selected>贝斯 (Bass)</option>
+                        <option value="other" selected>其他乐器 (Other)</option>
+                        <option value="piano">钢琴 (Piano，仅htdemucs_6s支持)</option>
+                        <option value="guitar">吉他 (Guitar，仅htdemucs_6s支持)</option>
+                    </select>
+                    <p><small>按住Ctrl键(Mac上为Command键)可选择多个音轨</small></p>
+                </div>
+                
+                <button type="submit" id="submitBtn" disabled>开始分离</button>
+            </form>
+            
+            <div class="progress-container" id="progressContainer">
+                <h3>处理中...</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">0%</div>
+                <div class="status-message" id="statusMessage"></div>
+                <a href="#" class="download-link" id="downloadLink" style="display: none;">下载分离后的音轨</a>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <h2>关于Demucs音频分离技术</h2>
+            <p>Demucs是由Facebook AI Research开发的先进音频源分离模型，能够将混合音频高质量地分离为不同的音轨组件。</p>
+            
+            <h3>主要特点</h3>
+            <ul>
+                <li>基于深度学习的音频源分离</li>
+                <li>支持多种分离模型，满足不同需求</li>
+                <li>可分离人声、鼓点、贝斯和其他乐器</li>
+                <li>支持高级6音轨模型(含钢琴和吉他)</li>
+                <li>实时显示处理进度</li>
+                <li>简单易用的Web界面</li>
+            </ul>
+            
+            <h3>可用模型说明</h3>
+            <div class="model-grid">
+                <div class="model-card">
+                    <div class="model-name">htdemucs <span class="badge">默认</span></div>
+                    <p><strong>特点:</strong> Hybrid Transformer Demucs，最新的混合架构模型</p>
+                    <p><strong>适用场景:</strong> 高质量分离，平衡了质量和速度</p>
+                    <p><strong>支持音轨:</strong> 人声、鼓点、贝斯、其他乐器</p>
+                </div>
+                
+                <div class="model-card">
+                    <div class="model-name">htdemucs_ft <span class="badge">高质量</span></div>
+                    <p><strong>特点:</strong> htdemucs的微调版本，更准确但处理速度更慢</p>
+                    <p><strong>适用场景:</strong> 需要最高质量分离，对速度要求不高</p>
+                    <p><strong>支持音轨:</strong> 人声、鼓点、贝斯、其他乐器</p>
+                </div>
+                
+                <div class="model-card">
+                    <div class="model-name">htdemucs_6s <span class="badge">6音轨</span></div>
+                    <p><strong>特点:</strong> 6音轨版本，增加了钢琴和吉他音轨</p>
+                    <p><strong>适用场景:</strong> 需要分离钢琴和吉他的场景</p>
+                    <p><strong>支持音轨:</strong> 人声、鼓点、贝斯、其他乐器、钢琴、吉他</p>
+                </div>
+                
+                <div class="model-card">
+                    <div class="model-name">mdx <span class="badge">平衡</span></div>
+                    <p><strong>特点:</strong> 仅在MusDB HQ上训练的模型</p>
+                    <p><strong>适用场景:</strong> 一般用途，性能适中</p>
+                    <p><strong>支持音轨:</strong> 人声、鼓点、贝斯、其他乐器</p>
+                </div>
+                
+                <div class="model-card">
+                    <div class="model-name">mdx_q <span class="badge">快速</span></div>
+                    <p><strong>特点:</strong> mdx的量化版本，体积更小，处理速度更快</p>
+                    <p><strong>适用场景:</strong> 速度敏感场景，对质量要求不高</p>
+                    <p><strong>支持音轨:</strong> 人声、鼓点、贝斯、其他乐器</p>
+                </div>
+            </div>
+            
+            <h3>使用建议</h3>
+            <ul>
+                <li>对于大多数用户，推荐使用默认的htdemucs模型，它提供了良好的平衡。</li>
+                <li>如果对分离质量有更高要求，可以尝试htdemucs_ft模型。</li>
+                <li>如果需要分离钢琴和吉他，请选择htdemucs_6s模型。</li>
+                <li>处理大型文件可能需要较长时间，尤其是使用高质量模型时。</li>
+                <li>音频质量较好的文件通常能获得更好的分离效果。</li>
+            </ul>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Demucs音频分离工具 &copy; 2023 | 基于<a href="https://github.com/facebookresearch/demucs" style="color: white; text-decoration: underline;">Demucs</a>开发</p>
+        </div>
+    </footer>
+
+    <script>
+        // DOM elements
+        const form = document.getElementById('separationForm');
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('audioFile');
+        const submitBtn = document.getElementById('submitBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const statusMessage = document.getElementById('statusMessage');
+        const downloadLink = document.getElementById('downloadLink');
+        
+        // Handle file selection
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                dropArea.textContent = `已选择文件: ${fileInput.files[0].name}`;
+                submitBtn.disabled = false;
+            } else {
+                dropArea.innerHTML = '<p>将音频文件拖放到此处，或点击选择文件</p>';
+                submitBtn.disabled = true;
+            }
+        });
+        
+        // Handle drag and drop
+        dropArea.addEventListener('click', () => fileInput.click());
+        
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.style.background = 'rgba(52, 152, 219, 0.2)';
+        });
+        
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.style.background = 'rgba(52, 152, 219, 0.05)';
+        });
+        
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.style.background = 'rgba(52, 152, 219, 0.05)';
+            
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                dropArea.textContent = `已选择文件: ${fileInput.files[0].name}`;
+                submitBtn.disabled = false;
+            }
+        });
+        
+        // Handle form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Validate file
+            if (!fileInput.files[0]) {
+                alert('请选择音频文件');
+                return;
+            }
+            
+            // Prepare form data
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('model', document.getElementById('modelSelect').value);
+            
+            // Handle stems selection
+            const stemsSelect = document.getElementById('stemsSelect');
+            const selectedStems = Array.from(stemsSelect.selectedOptions).map(option => option.value);
+            if (selectedStems.length > 0) {
+                formData.append('stems', selectedStems.join(','));
+            }
+            
+            // Show progress container
+            progressContainer.style.display = 'block';
+            submitBtn.disabled = true;
+            
+            try {
+                // Submit the processing request
+                const response = await fetch('/api/process', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`服务器错误: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Start listening for progress updates
+                    const jobId = data.data.job_id;
+                    const progressUrl = data.data.progress_url;
+                    const downloadUrl = data.data.download_url;
+                    
+                    // Set up SSE for progress updates
+                    const eventSource = new EventSource(progressUrl);
+                    
+                    eventSource.onmessage = (event) => {
+                        const progress = JSON.parse(event.data);
+                        
+                        // Update progress bar
+                        progressFill.style.width = `${progress.progress}%`;
+                        progressText.textContent = `${progress.progress}% - ${progress.message}`;
+                        
+                        // Handle completion
+                        if (progress.status === 'completed') {
+                            eventSource.close();
+                            statusMessage.textContent = '处理完成！';
+                            statusMessage.className = 'status-message status-success';
+                            
+                            // Show download link
+                            downloadLink.href = downloadUrl;
+                            downloadLink.style.display = 'inline-block';
+                            
+                            // Reset form
+                            submitBtn.disabled = false;
+                        }
+                        
+                        // Handle error
+                        if (progress.status === 'error') {
+                            eventSource.close();
+                            statusMessage.textContent = progress.message;
+                            statusMessage.className = 'status-message status-error';
+                            submitBtn.disabled = false;
+                        }
+                    };
+                    
+                    eventSource.onerror = () => {
+                        eventSource.close();
+                        statusMessage.textContent = '接收进度更新时出错';
+                        statusMessage.className = 'status-message status-error';
+                        submitBtn.disabled = false;
+                    };
+                    
+                } else {
+                    throw new Error(data.message || '未知错误');
+                }
+                
+            } catch (error) {
+                console.error('错误:', error);
+                statusMessage.textContent = `错误: ${error.message}`;
+                statusMessage.className = 'status-message status-error';
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html> 

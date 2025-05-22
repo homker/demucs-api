@@ -1,55 +1,39 @@
 import uuid
+import os
+import random
+import string
 import logging
-from flask import request, jsonify, send_file
+from flask import request, jsonify, send_file, current_app
 
 logger = logging.getLogger(__name__)
 
 def generate_job_id():
-    """生成唯一任务ID"""
+    """Generate unique job ID"""
     return str(uuid.uuid4())
 
-def validate_request(required_fields=None, file_field='file'):
+def validate_request(request_obj, required_fields=None):
     """
-    验证请求数据
+    Validate request data
     
-    Parameters:
-    - required_fields: 必需的字段列表
-    - file_field: 文件字段名
+    Args:
+        request_obj: Flask request object
+        required_fields: List of required fields
     
     Returns:
-    - (bool, dict, str): (验证结果, 处理后的数据, 错误信息)
+        bool: True if valid, False otherwise
     """
-    data = {}
-    errors = []
-    
-    # 检查文件是否上传
-    if file_field:
-        if file_field not in request.files:
-            return False, {}, '没有上传文件'
-        
-        file = request.files[file_field]
-        if file.filename == '':
-            return False, {}, '没有选择文件'
-        
-        data[file_field] = file
-    
-    # 处理表单数据
-    for field in request.form:
-        data[field] = request.form[field]
-    
-    # 检查必需字段
     if required_fields:
         for field in required_fields:
-            if field not in data:
-                errors.append(f'缺少必需字段: {field}')
+            if field == 'file':
+                if 'file' not in request_obj.files:
+                    return False
+            elif field not in request_obj.form:
+                return False
     
-    if errors:
-        return False, {}, '; '.join(errors)
-    
-    return True, data, ''
+    return True
 
 def process_boolean_param(param_value):
-    """处理布尔类型参数"""
+    """Process boolean parameters"""
     if isinstance(param_value, bool):
         return param_value
     
@@ -59,15 +43,18 @@ def process_boolean_param(param_value):
     return False
 
 def create_error_response(message, status_code=400):
-    """创建错误响应"""
-    return jsonify({'error': message}), status_code
+    """Create error response"""
+    return jsonify({
+        'status': 'error',
+        'message': message
+    }), status_code
 
 def create_success_response(data=None, message=None):
-    """创建成功响应"""
+    """Create success response"""
     response = {'status': 'success'}
     
     if data:
-        response.update(data)
+        response['data'] = data
     
     if message:
         response['message'] = message
@@ -76,19 +63,19 @@ def create_success_response(data=None, message=None):
 
 def create_file_response(file_path, download_name=None, cleanup_id=None):
     """
-    创建文件下载响应
+    Create file download response
     
     Parameters:
-    - file_path: 文件路径
-    - download_name: 下载文件名
-    - cleanup_id: 清理ID（可选）
+    - file_path: File path
+    - download_name: Download file name
+    - cleanup_id: Cleanup ID (optional)
     
     Returns:
-    - Response: 文件下载响应
+    - Response: File download response
     """
     try:
         if not download_name:
-            download_name = file_path.split('/')[-1]
+            download_name = os.path.basename(file_path)
         
         response = send_file(
             file_path,
@@ -97,11 +84,80 @@ def create_file_response(file_path, download_name=None, cleanup_id=None):
             mimetype='application/zip'
         )
         
-        # 添加清理ID头信息
+        # Add cleanup ID header
         if cleanup_id:
             response.headers['X-Cleanup-ID'] = cleanup_id
         
         return response
     except Exception as e:
-        logger.error(f"创建文件响应时出错: {str(e)}", exc_info=True)
-        return create_error_response(f'处理文件时出错: {str(e)}', 500) 
+        logger.error(f"Error creating file response: {str(e)}")
+        return create_error_response(f'Error processing file: {str(e)}', 500)
+
+def allowed_file(filename):
+    """
+    Check if the file extension is allowed
+    
+    Args:
+        filename: Name of the file
+        
+    Returns:
+        bool: True if file extension is allowed
+    """
+    if not filename:
+        return False
+        
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in current_app.config.ALLOWED_EXTENSIONS
+
+def random_string(length=8):
+    """
+    Generate a random string of specified length
+    
+    Args:
+        length: Length of the string to generate
+        
+    Returns:
+        str: Random string
+    """
+    letters = string.ascii_lowercase + string.digits
+    return ''.join(random.choice(letters) for i in range(length))
+
+def make_response(data, status=200):
+    """
+    Create a JSON response with appropriate headers
+    
+    Args:
+        data: Response data
+        status: HTTP status code
+        
+    Returns:
+        Response: Flask response object
+    """
+    response = jsonify(data)
+    response.status_code = status
+    return response
+
+def validate_models(model_names):
+    """
+    Validate model names against available models
+    
+    Args:
+        model_names: List of model names to validate
+        
+    Returns:
+        tuple: (valid, error_message)
+    """
+    if not model_names:
+        return True, None
+        
+    try:
+        available_models = current_app.audio_separator.get_available_models()
+        
+        for model in model_names:
+            if model != 'all' and model not in available_models:
+                return False, f"Model '{model}' not found. Available models: {available_models}"
+                
+        return True, None
+    except Exception as e:
+        logger.error(f"Error validating models: {str(e)}")
+        return False, f"Error validating models: {str(e)}" 

@@ -1,53 +1,72 @@
 import os
+from pathlib import Path
 
 class Config:
-    """应用配置基类"""
-    # 上传文件大小限制（200MB）
-    MAX_CONTENT_LENGTH = 200 * 1024 * 1024
+    """Application configuration class"""
     
-    # 目录配置
-    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'uploads')
-    OUTPUT_FOLDER = os.environ.get('OUTPUT_FOLDER', 'outputs')
+    # General configuration
+    DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key-12345')
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
     
-    # 文件保留时间（分钟）
-    FILE_RETENTION_MINUTES = int(os.environ.get('FILE_RETENTION_MINUTES', 300))
+    # Admin settings
+    ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN', 'admin-token-12345')  # 用于管理接口认证的令牌
     
-    # Demucs 相关配置
-    DEFAULT_MODEL = 'htdemucs'
-    DEFAULT_SEGMENT = 7  # htdemucs 默认分段长度（秒）
-    OTHER_DEFAULT_SEGMENT = 10  # 其他模型默认分段长度（秒）
-    DEFAULT_MP3_BITRATE = 320
+    # File paths
+    BASE_DIR = Path(os.path.abspath(os.path.dirname(__file__))).parent
+    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', os.path.join(BASE_DIR, 'uploads'))
+    OUTPUT_FOLDER = os.environ.get('OUTPUT_FOLDER', os.path.join(BASE_DIR, 'outputs'))
+    
+    # File settings
+    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 500 * 1024 * 1024))  # 500 MB
+    ALLOWED_EXTENSIONS = {'mp3', 'wav', 'flac', 'ogg', 'm4a', 'mp4'}
+    FILE_RETENTION_MINUTES = int(os.environ.get('FILE_RETENTION_MINUTES', 60))  # 1 hour
+    
+    # Audio processing settings
+    DEFAULT_MODEL = os.environ.get('DEFAULT_MODEL', 'htdemucs')
+    SAMPLE_RATE = int(os.environ.get('SAMPLE_RATE', 44100))
+    CHANNELS = int(os.environ.get('CHANNELS', 2))
+    
+    # Flask server settings
+    HOST = os.environ.get('HOST', '0.0.0.0')
+    PORT = int(os.environ.get('PORT', 5000))
 
 
 class DevelopmentConfig(Config):
-    """开发环境配置"""
+    """Development configuration"""
     DEBUG = True
-    TESTING = False
-
-
-class TestingConfig(Config):
-    """测试环境配置"""
-    DEBUG = False
-    TESTING = True
-    # 测试环境可以使用更短的保留时间
-    FILE_RETENTION_MINUTES = 5
+    LOG_LEVEL = 'DEBUG'
 
 
 class ProductionConfig(Config):
-    """生产环境配置"""
+    """Production configuration"""
     DEBUG = False
-    TESTING = False
+    LOG_LEVEL = 'INFO'
+    
+    # In production, use a proper secret key
+    SECRET_KEY = os.environ.get('SECRET_KEY') or os.urandom(24).hex()
 
 
-# 配置映射
+class TestingConfig(Config):
+    """Testing configuration"""
+    TESTING = True
+    DEBUG = True
+    LOG_LEVEL = 'DEBUG'
+    
+    # Use temporary directories for tests
+    UPLOAD_FOLDER = os.path.join(Config.BASE_DIR, 'test_uploads')
+    OUTPUT_FOLDER = os.path.join(Config.BASE_DIR, 'test_outputs')
+
+
+# Configuration dictionary
 config_by_name = {
     'development': DevelopmentConfig,
-    'testing': TestingConfig,
     'production': ProductionConfig,
+    'testing': TestingConfig,
     'default': DevelopmentConfig
 }
 
-# 根据环境变量获取配置
+# Get configuration based on environment
 def get_config():
-    env = os.environ.get('FLASK_ENV', 'default')
-    return config_by_name[env] 
+    env = os.environ.get('FLASK_ENV', 'development')
+    return config_by_name.get(env, config_by_name['default']) 
