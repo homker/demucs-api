@@ -1,5 +1,6 @@
 FROM python:3.10-slim
 
+
 WORKDIR /app
 
 # 安装系统依赖
@@ -45,6 +46,8 @@ ENV PYTHONUNBUFFERED=1
 ENV PORT=8080
 ENV FLASK_ENV=production
 ENV HOST=0.0.0.0
+ENV TORCH_HOME=/app/models
+ENV OMP_NUM_THREADS=1
 
 # 验证FFmpeg版本和torchaudio后端
 RUN ffmpeg -version && \
@@ -52,6 +55,10 @@ RUN ffmpeg -version && \
 
 # 验证MCP相关依赖
 RUN python -c "import flask_cors; import sseclient; print('MCP dependencies installed successfully')"
+
+VOLUME /app/uploads
+VOLUME /app/outputs
+VOLUME /app/models
 
 # 暴露端口
 EXPOSE 8080
