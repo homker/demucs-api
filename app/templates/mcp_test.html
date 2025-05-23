@@ -3,81 +3,742 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MCP 音频分离服务器测试</title>
+    <title>MCP协议测试 - Demucs 音频分离工具</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
-    <div class="container">
+    <header>
+        <div class="container">
+            <h1>🧪 MCP协议测试</h1>
+            <p>交互式MCP (Model Context Protocol) 功能测试和调试工具</p>
+            <div class="main-nav">
+                <a href="/" class="nav-link">🏠 首页</a>
+                <a href="/mcp" class="nav-link">🔗 MCP协议</a>
+                <a href="/api-docs" class="nav-link">📚 API文档</a>
+                <a href="/docs" class="nav-link">📖 使用指南</a>
+                <a href="/test-guide" class="nav-link">🧪 测试指南</a>
+                <a href="/admin" class="nav-link">🛠️ 管理面板</a>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container container-sm">
+        <!-- 测试导航 -->
+        <div class="card" style="background: #f8f9fa;">
+            <h3>🎯 测试类别</h3>
+            <div class="btn-group" style="margin-bottom: 0;">
+                <button class="btn btn-primary active" onclick="showTestSection('basic')">基础连接</button>
+                <button class="btn btn-primary" onclick="showTestSection('tools')">工具测试</button>
+                <button class="btn btn-primary" onclick="showTestSection('audio')">音频分离</button>
+                <button class="btn btn-primary" onclick="showTestSection('logs')">实时日志</button>
+            </div>
+        </div>
+
+        <!-- 服务器状态概览 -->
         <div class="card">
-            <h1>🎵 MCP 音频分离服务器测试</h1>
-            
-            <div class="page-nav">
-                <a href="{{ url_for('main.index') }}" class="nav-link">← 返回主页</a>
-            </div>
-            
-            <div class="grid">
-                <div class="test-section">
-                    <h2>服务器状态</h2>
-                    <button class="btn btn-primary" onclick="checkHealth()">检查健康状态</button>
-                    <button class="btn btn-secondary" onclick="getCapabilities()">获取服务器能力</button>
-                    <div id="healthOutput" class="output" style="min-height: 100px;"></div>
+            <h2>📊 服务器状态概览</h2>
+            <div class="grid grid-3">
+                <div class="stat-card card-info">
+                    <div class="stat-number" id="connection-status">检查中...</div>
+                    <div class="stat-label">连接状态</div>
                 </div>
-                
-                <div class="test-section">
-                    <h2>工具和资源</h2>
-                    <button class="btn btn-primary" onclick="listTools()">列出工具</button>
-                    <button class="btn btn-primary" onclick="listResources()">列出资源</button>
-                    <button class="btn btn-accent" onclick="getModels()">获取模型</button>
-                    <div id="toolsOutput" class="output" style="min-height: 100px;"></div>
+                <div class="stat-card card-success">
+                    <div class="stat-number" id="tools-count">-</div>
+                    <div class="stat-label">可用工具</div>
+                </div>
+                <div class="stat-card card-warning">
+                    <div class="stat-number" id="resources-count">-</div>
+                    <div class="stat-label">可用资源</div>
                 </div>
             </div>
-            
-            <div class="test-section">
-                <h2>音频分离测试</h2>
-                <div class="form-group">
-                    <label>模型选择:</label>
-                    <select id="modelSelect" class="w-100">
-                        <option value="htdemucs">htdemucs - 默认高质量</option>
-                        <option value="htdemucs_ft">htdemucs_ft - 微调版本</option>
-                        <option value="htdemucs_6s">htdemucs_6s - 6音轨版本</option>
-                        <option value="mdx">mdx - 平衡型</option>
-                        <option value="mdx_q">mdx_q - 快速版本</option>
-                    </select>
-                </div>
+        </div>
+
+        <!-- 基础连接测试 -->
+        <div class="test-section-content" id="basic-section">
+            <div class="card">
+                <h2>🔗 基础连接测试</h2>
+                <p>测试MCP服务器的基本连接和协议支持功能。</p>
                 
-                <div class="form-group">
-                    <label>音轨选择:</label><br>
-                    <label><input type="checkbox" value="vocals" checked> 人声</label>
-                    <label><input type="checkbox" value="drums"> 鼓点</label>
-                    <label><input type="checkbox" value="bass"> 贝斯</label>
-                    <label><input type="checkbox" value="other"> 其他</label>
-                    <label><input type="checkbox" value="piano"> 钢琴</label>
-                    <label><input type="checkbox" value="guitar"> 吉他</label>
-                </div>
-                
-                <button class="btn btn-success" onclick="startAudioSeparation()">开始模拟音频分离</button>
-                <button class="btn btn-danger" onclick="stopStream()">停止流</button>
-                
-                <div id="progressContainer" class="progress-container" style="display: none;">
-                    <div class="progress-bar">
-                        <div id="progressFill" class="progress-fill gradient"></div>
+                <div class="grid grid-2">
+                    <div class="test-panel">
+                        <h4>服务器健康检查</h4>
+                        <p class="text-muted">验证MCP服务器是否正常运行</p>
+                        <button class="btn btn-primary w-100" onclick="checkHealth()">
+                            🏥 检查健康状态
+                        </button>
                     </div>
-                    <div id="progressText" class="progress-text">准备中...</div>
+                    
+                    <div class="test-panel">
+                        <h4>服务器能力查询</h4>
+                        <p class="text-muted">获取服务器支持的MCP协议能力</p>
+                        <button class="btn btn-secondary w-100" onclick="getCapabilities()">
+                            💡 获取服务器能力
+                        </button>
+                    </div>
                 </div>
                 
-                <div id="separationOutput" class="output" style="min-height: 200px;"></div>
+                <div class="output-section">
+                    <h4>测试结果</h4>
+                    <div id="healthOutput" class="output"></div>
+                </div>
             </div>
-            
-            <div class="test-section">
-                <h2>实时日志</h2>
-                <button class="btn btn-secondary" onclick="clearLogs()">清空日志</button>
-                <div id="logOutput" class="output" style="min-height: 150px;"></div>
+        </div>
+
+        <!-- 工具和资源测试 -->
+        <div class="test-section-content" id="tools-section" style="display: none;">
+            <div class="card">
+                <h2>🛠️ 工具和资源测试</h2>
+                <p>测试MCP服务器提供的工具和资源功能。</p>
+                
+                <div class="grid grid-3">
+                    <div class="test-panel">
+                        <h4>工具列表</h4>
+                        <p class="text-muted">获取所有可用的MCP工具</p>
+                        <button class="btn btn-primary w-100" onclick="listTools()">
+                            🔧 列出工具
+                        </button>
+                    </div>
+                    
+                    <div class="test-panel">
+                        <h4>资源列表</h4>
+                        <p class="text-muted">获取所有可用的MCP资源</p>
+                        <button class="btn btn-primary w-100" onclick="listResources()">
+                            📚 列出资源
+                        </button>
+                    </div>
+                    
+                    <div class="test-panel">
+                        <h4>模型信息</h4>
+                        <p class="text-muted">获取可用的Demucs模型列表</p>
+                        <button class="btn btn-accent w-100" onclick="getModels()">
+                            🎯 获取模型
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="output-section">
+                    <h4>测试结果</h4>
+                    <div id="toolsOutput" class="output"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 音频分离测试 -->
+        <div class="test-section-content" id="audio-section" style="display: none;">
+            <div class="card">
+                <h2>🎵 音频分离测试</h2>
+                <p>测试通过MCP协议调用音频分离功能。</p>
+                
+                <div class="form-section">
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label for="modelSelect">
+                                <span class="label-icon">🎯</span>
+                                模型选择
+                            </label>
+                            <select id="modelSelect" class="form-control">
+                                <option value="htdemucs">htdemucs - 默认高质量</option>
+                                <option value="htdemucs_ft">htdemucs_ft - 微调版本</option>
+                                <option value="htdemucs_6s">htdemucs_6s - 6音轨版本</option>
+                                <option value="mdx">mdx - 平衡型</option>
+                                <option value="mdx_q">mdx_q - 快速版本</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <span class="label-icon">🎼</span>
+                                音轨选择
+                            </label>
+                            <div class="checkbox-grid">
+                                <label class="checkbox-wrapper">
+                                    <input type="checkbox" value="vocals" checked>
+                                    <span class="checkmark"></span>
+                                    <span class="checkbox-label">🎤 人声</span>
+                                </label>
+                                <label class="checkbox-wrapper">
+                                    <input type="checkbox" value="drums">
+                                    <span class="checkmark"></span>
+                                    <span class="checkbox-label">🥁 鼓点</span>
+                                </label>
+                                <label class="checkbox-wrapper">
+                                    <input type="checkbox" value="bass">
+                                    <span class="checkmark"></span>
+                                    <span class="checkbox-label">🎸 贝斯</span>
+                                </label>
+                                <label class="checkbox-wrapper">
+                                    <input type="checkbox" value="other">
+                                    <span class="checkmark"></span>
+                                    <span class="checkbox-label">🎹 其他</span>
+                                </label>
+                                <label class="checkbox-wrapper">
+                                    <input type="checkbox" value="piano">
+                                    <span class="checkmark"></span>
+                                    <span class="checkbox-label">🎹 钢琴</span>
+                                </label>
+                                <label class="checkbox-wrapper">
+                                    <input type="checkbox" value="guitar">
+                                    <span class="checkmark"></span>
+                                    <span class="checkbox-label">🎸 吉他</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="startAudioSeparation()">
+                            🚀 开始模拟音频分离
+                        </button>
+                        <button class="btn btn-danger" onclick="stopStream()">
+                            ⏹️ 停止流
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearSeparationOutput()">
+                            🗑️ 清空输出
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 进度显示 -->
+                <div id="progressContainer" class="progress-container" style="display: none;">
+                    <div class="progress-wrapper">
+                        <div class="progress-bar">
+                            <div id="progressFill" class="progress-fill"></div>
+                        </div>
+                        <div id="progressText" class="progress-text">准备中...</div>
+                    </div>
+                </div>
+                
+                <div class="output-section">
+                    <h4>分离结果</h4>
+                    <div id="separationOutput" class="output"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 实时日志 -->
+        <div class="test-section-content" id="logs-section" style="display: none;">
+            <div class="card">
+                <h2>📜 实时日志监控</h2>
+                <p>实时查看MCP协议通信和音频处理的详细日志。</p>
+                
+                <div class="log-controls">
+                    <select id="log-level-filter">
+                        <option value="all">全部级别</option>
+                        <option value="debug">DEBUG</option>
+                        <option value="info">INFO</option>
+                        <option value="warning">WARNING</option>
+                        <option value="error">ERROR</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="refreshLogs()">🔄 刷新</button>
+                    <button class="btn btn-secondary btn-sm" onclick="clearLogs()">🗑️ 清空日志</button>
+                    <button class="btn btn-success btn-sm" onclick="exportLogs()">📄 导出日志</button>
+                </div>
+                
+                <div class="log-container">
+                    <div id="logOutput" class="log-viewer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MCP协议信息 -->
+        <div class="card">
+            <h2>🔧 MCP协议信息</h2>
+            <div class="grid grid-2">
+                <div class="info-card">
+                    <h4>📡 连接信息</h4>
+                    <ul>
+                        <li><strong>端点：</strong> <code>http://localhost:8080/mcp</code></li>
+                        <li><strong>协议：</strong> JSON-RPC 2.0</li>
+                        <li><strong>传输：</strong> HTTP POST</li>
+                        <li><strong>流式：</strong> Server-Sent Events</li>
+                    </ul>
+                </div>
+                
+                <div class="info-card">
+                    <h4>🛠️ 支持的工具</h4>
+                    <ul>
+                        <li><code>separate_audio</code> - 音频分离</li>
+                        <li><code>get_models</code> - 模型列表</li>
+                        <li><code>get_job_status</code> - 任务状态</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 测试统计 -->
+        <div class="card">
+            <h2>📊 测试统计</h2>
+            <div class="grid grid-4">
+                <div class="stat-card card-primary">
+                    <div class="stat-number" id="tests-run">0</div>
+                    <div class="stat-label">已运行测试</div>
+                </div>
+                <div class="stat-card card-success">
+                    <div class="stat-number" id="tests-passed">0</div>
+                    <div class="stat-label">测试通过</div>
+                </div>
+                <div class="stat-card card-danger">
+                    <div class="stat-number" id="tests-failed">0</div>
+                    <div class="stat-label">测试失败</div>
+                </div>
+                <div class="stat-card card-info">
+                    <div class="stat-number" id="avg-response-time">0ms</div>
+                    <div class="stat-label">平均响应时间</div>
+                </div>
             </div>
         </div>
     </div>
 
+    <footer>
+        <div class="container">
+            <p>Demucs音频分离工具 &copy; 2024 | 基于<a href="https://github.com/facebookresearch/demucs" style="color: white; text-decoration: underline;">Demucs</a>开发</p>
+        </div>
+    </footer>
+
     <!-- JavaScript文件 -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/audio-processor.js') }}"></script>
+    <script>
+        // 测试统计
+        let testStats = {
+            run: 0,
+            passed: 0,
+            failed: 0,
+            responseTimes: []
+        };
+
+        // 显示/隐藏测试部分
+        function showTestSection(section) {
+            // 隐藏所有测试部分
+            document.querySelectorAll('.test-section-content').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            // 移除所有按钮的激活状态
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 显示选中的部分
+            document.getElementById(section + '-section').style.display = 'block';
+            
+            // 激活对应按钮
+            event.target.classList.add('active');
+        }
+
+        // 记录测试结果
+        function recordTestResult(success, responseTime = 0) {
+            testStats.run++;
+            if (success) {
+                testStats.passed++;
+            } else {
+                testStats.failed++;
+            }
+            if (responseTime > 0) {
+                testStats.responseTimes.push(responseTime);
+            }
+            
+            updateTestStats();
+        }
+
+        // 更新测试统计显示
+        function updateTestStats() {
+            document.getElementById('tests-run').textContent = testStats.run;
+            document.getElementById('tests-passed').textContent = testStats.passed;
+            document.getElementById('tests-failed').textContent = testStats.failed;
+            
+            if (testStats.responseTimes.length > 0) {
+                const avgTime = testStats.responseTimes.reduce((a, b) => a + b, 0) / testStats.responseTimes.length;
+                document.getElementById('avg-response-time').textContent = Math.round(avgTime) + 'ms';
+            }
+        }
+
+        // 检查健康状态
+        async function checkHealth() {
+            const startTime = Date.now();
+            const output = document.getElementById('healthOutput');
+            output.innerHTML = '<div class="loading"><div class="spinner"></div><span>正在检查健康状态...</span></div>';
+            
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                const responseTime = Date.now() - startTime;
+                
+                output.innerHTML = `
+                    <div class="result-success">
+                        <h5>✅ 服务器健康检查通过</h5>
+                        <p><strong>状态：</strong> ${data.status}</p>
+                        <p><strong>响应时间：</strong> ${responseTime}ms</p>
+                        <p><strong>时间戳：</strong> ${new Date().toLocaleString()}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+                document.getElementById('connection-status').textContent = '正常';
+                recordTestResult(true, responseTime);
+                
+            } catch (error) {
+                const responseTime = Date.now() - startTime;
+                output.innerHTML = `
+                    <div class="result-error">
+                        <h5>❌ 健康检查失败</h5>
+                        <p><strong>错误：</strong> ${error.message}</p>
+                        <p><strong>响应时间：</strong> ${responseTime}ms</p>
+                    </div>
+                `;
+                
+                document.getElementById('connection-status').textContent = '异常';
+                recordTestResult(false, responseTime);
+            }
+        }
+
+        // 获取服务器能力
+        async function getCapabilities() {
+            const startTime = Date.now();
+            const output = document.getElementById('healthOutput');
+            output.innerHTML = '<div class="loading"><div class="spinner"></div><span>正在获取服务器能力...</span></div>';
+            
+            try {
+                const response = await fetch('/mcp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: 1,
+                        method: 'initialize',
+                        params: {
+                            protocolVersion: '1.0',
+                            capabilities: {},
+                            clientInfo: { name: 'MCP Test Client', version: '1.0.0' }
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                const responseTime = Date.now() - startTime;
+                
+                output.innerHTML = `
+                    <div class="result-success">
+                        <h5>✅ 服务器能力获取成功</h5>
+                        <p><strong>响应时间：</strong> ${responseTime}ms</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+                recordTestResult(true, responseTime);
+                
+            } catch (error) {
+                const responseTime = Date.now() - startTime;
+                output.innerHTML = `
+                    <div class="result-error">
+                        <h5>❌ 获取服务器能力失败</h5>
+                        <p><strong>错误：</strong> ${error.message}</p>
+                        <p><strong>响应时间：</strong> ${responseTime}ms</p>
+                    </div>
+                `;
+                
+                recordTestResult(false, responseTime);
+            }
+        }
+
+        // 列出工具
+        async function listTools() {
+            const startTime = Date.now();
+            const output = document.getElementById('toolsOutput');
+            output.innerHTML = '<div class="loading"><div class="spinner"></div><span>正在获取工具列表...</span></div>';
+            
+            try {
+                const response = await fetch('/mcp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: 2,
+                        method: 'tools/list',
+                        params: {}
+                    })
+                });
+                
+                const data = await response.json();
+                const responseTime = Date.now() - startTime;
+                
+                if (data.result && data.result.tools) {
+                    document.getElementById('tools-count').textContent = data.result.tools.length;
+                }
+                
+                output.innerHTML = `
+                    <div class="result-success">
+                        <h5>✅ 工具列表获取成功</h5>
+                        <p><strong>工具数量：</strong> ${data.result?.tools?.length || 0}</p>
+                        <p><strong>响应时间：</strong> ${responseTime}ms</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+                recordTestResult(true, responseTime);
+                
+            } catch (error) {
+                const responseTime = Date.now() - startTime;
+                output.innerHTML = `
+                    <div class="result-error">
+                        <h5>❌ 获取工具列表失败</h5>
+                        <p><strong>错误：</strong> ${error.message}</p>
+                        <p><strong>响应时间：</strong> ${responseTime}ms</p>
+                    </div>
+                `;
+                
+                recordTestResult(false, responseTime);
+            }
+        }
+
+        // 列出资源
+        async function listResources() {
+            const startTime = Date.now();
+            const output = document.getElementById('toolsOutput');
+            
+            try {
+                const response = await fetch('/mcp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: 3,
+                        method: 'resources/list',
+                        params: {}
+                    })
+                });
+                
+                const data = await response.json();
+                const responseTime = Date.now() - startTime;
+                
+                if (data.result && data.result.resources) {
+                    document.getElementById('resources-count').textContent = data.result.resources.length;
+                }
+                
+                output.innerHTML = `
+                    <div class="result-success">
+                        <h5>✅ 资源列表获取成功</h5>
+                        <p><strong>资源数量：</strong> ${data.result?.resources?.length || 0}</p>
+                        <p><strong>响应时间：</strong> ${responseTime}ms</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+                recordTestResult(true, responseTime);
+                
+            } catch (error) {
+                const responseTime = Date.now() - startTime;
+                output.innerHTML = `
+                    <div class="result-error">
+                        <h5>❌ 获取资源列表失败</h5>
+                        <p><strong>错误：</strong> ${error.message}</p>
+                        <p><strong>响应时间：</strong> ${responseTime}ms</p>
+                    </div>
+                `;
+                
+                recordTestResult(false, responseTime);
+            }
+        }
+
+        // 获取模型
+        async function getModels() {
+            const startTime = Date.now();
+            const output = document.getElementById('toolsOutput');
+            
+            try {
+                const response = await fetch('/mcp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: 4,
+                        method: 'tools/call',
+                        params: {
+                            name: 'get_models',
+                            arguments: {}
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                const responseTime = Date.now() - startTime;
+                
+                output.innerHTML = `
+                    <div class="result-success">
+                        <h5>✅ 模型列表获取成功</h5>
+                        <p><strong>响应时间：</strong> ${responseTime}ms</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+                recordTestResult(true, responseTime);
+                
+            } catch (error) {
+                const responseTime = Date.now() - startTime;
+                output.innerHTML = `
+                    <div class="result-error">
+                        <h5>❌ 获取模型列表失败</h5>
+                        <p><strong>错误：</strong> ${error.message}</p>
+                        <p><strong>响应时间：</strong> ${responseTime}ms</p>
+                    </div>
+                `;
+                
+                recordTestResult(false, responseTime);
+            }
+        }
+
+        // 开始音频分离
+        async function startAudioSeparation() {
+            const model = document.getElementById('modelSelect').value;
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            const stems = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (stems.length === 0) {
+                window.showMessage('请至少选择一个音轨类型', 'warning');
+                return;
+            }
+            
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            const output = document.getElementById('separationOutput');
+            
+            progressContainer.style.display = 'block';
+            progressFill.style.width = '0%';
+            progressText.textContent = '正在启动音频分离...';
+            
+            try {
+                const response = await fetch('/mcp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: 5,
+                        method: 'tools/call',
+                        params: {
+                            name: 'separate_audio',
+                            arguments: {
+                                file_path: '/demo/test_audio.mp3',
+                                model: model,
+                                stems: stems,
+                                stream_progress: true
+                            }
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                output.innerHTML = `
+                    <div class="result-success">
+                        <h5>✅ 音频分离任务启动成功</h5>
+                        <p><strong>任务ID：</strong> ${data.result?.job_id || 'N/A'}</p>
+                        <p><strong>模型：</strong> ${model}</p>
+                        <p><strong>音轨：</strong> ${stems.join(', ')}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+                // 模拟进度更新
+                simulateProgress();
+                recordTestResult(true);
+                
+            } catch (error) {
+                output.innerHTML = `
+                    <div class="result-error">
+                        <h5>❌ 音频分离启动失败</h5>
+                        <p><strong>错误：</strong> ${error.message}</p>
+                    </div>
+                `;
+                
+                progressContainer.style.display = 'none';
+                recordTestResult(false);
+            }
+        }
+
+        // 模拟进度更新
+        function simulateProgress() {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            let progress = 0;
+            
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    progressText.textContent = '✅ 分离完成！';
+                } else {
+                    progressText.textContent = `处理中... ${Math.round(progress)}%`;
+                }
+                
+                progressFill.style.width = progress + '%';
+            }, 500);
+        }
+
+        // 停止流
+        function stopStream() {
+            document.getElementById('progressContainer').style.display = 'none';
+            window.showMessage('已停止音频分离流', 'info');
+        }
+
+        // 清空分离输出
+        function clearSeparationOutput() {
+            document.getElementById('separationOutput').innerHTML = '';
+            document.getElementById('progressContainer').style.display = 'none';
+        }
+
+        // 清空日志
+        function clearLogs() {
+            document.getElementById('logOutput').innerHTML = '';
+            window.showMessage('日志已清空', 'info');
+        }
+
+        // 刷新日志
+        function refreshLogs() {
+            const logOutput = document.getElementById('logOutput');
+            logOutput.innerHTML = `
+                <div class="log-entry log-info">
+                    <span class="log-time">[${new Date().toLocaleTimeString()}]</span>
+                    <span class="log-level">INFO</span>
+                    <span class="log-message">日志已刷新</span>
+                </div>
+            `;
+        }
+
+        // 导出日志
+        function exportLogs() {
+            const logs = document.getElementById('logOutput').innerText;
+            const blob = new Blob([logs], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mcp-test-logs-${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            window.showMessage('日志已导出', 'success');
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 自动检查服务器状态
+            setTimeout(checkHealth, 1000);
+            
+            // 每30秒自动刷新连接状态
+            setInterval(async () => {
+                try {
+                    const response = await fetch('/health');
+                    if (response.ok) {
+                        document.getElementById('connection-status').textContent = '正常';
+                    } else {
+                        document.getElementById('connection-status').textContent = '异常';
+                    }
+                } catch (error) {
+                    document.getElementById('connection-status').textContent = '断开';
+                }
+            }, 30000);
+        });
+    </script>
 </body>
 </html> 

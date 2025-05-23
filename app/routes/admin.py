@@ -528,4 +528,12 @@ def delete_task():
         return jsonify({
             'status': 'error',
             'message': f'删除任务失败: {str(e)}'
-        }), 500 
+        }), 500
+
+@admin_bp.route('/api/status')
+def api_status():
+    """检查管理员认证状态"""
+    return jsonify({
+        'authenticated': session.get('admin_authenticated', False),
+        'timestamp': time.time()
+    }) 
