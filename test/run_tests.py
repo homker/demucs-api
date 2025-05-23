@@ -140,7 +140,7 @@ class TestRunner:
         
         # 检查项目文件结构
         self.run_command(
-            "ls -la app/",
+            "ls -la ../app/",
             "项目结构检查"
         )
     
@@ -170,29 +170,40 @@ class TestRunner:
     
     def run_integration_tests(self):
         """运行集成测试"""
-        print("\n🔗 集成测试")
+        print("=== 运行集成测试 ===")
         
-        # 检查服务器是否运行
-        self.run_command(
-            "curl -s http://localhost:8080/health || echo 'Server not running'",
-            "服务器连接测试"
-        )
+        success = True
         
-        # 测试主要端点
-        self.run_command(
-            "curl -s http://localhost:8080/api/models",
-            "模型API测试"
-        )
+        # 运行API响应格式测试
+        try:
+            from integration.test_api_response_format import run_api_response_format_tests
+            print("🧪 运行API响应格式测试...")
+            if not run_api_response_format_tests():
+                success = False
+        except ImportError as e:
+            print(f"⚠️ API响应格式测试模块无法导入: {e}")
+        except Exception as e:
+            print(f"❌ API响应格式测试执行失败: {e}")
+            success = False
         
-        self.run_command(
-            "curl -s http://localhost:8080/api/formats",
-            "格式API测试"
-        )
+        # 运行前端集成测试
+        try:
+            from integration.test_frontend_integration import run_frontend_integration_tests
+            print("🧪 运行前端集成测试...")
+            if not run_frontend_integration_tests():
+                success = False
+        except ImportError as e:
+            print(f"⚠️ 前端集成测试模块无法导入: {e}")
+        except Exception as e:
+            print(f"❌ 前端集成测试执行失败: {e}")
+            success = False
         
-        self.run_command(
-            "curl -s http://localhost:8080/api/qualities",
-            "质量API测试"
-        )
+        if success:
+            print("✅ 所有集成测试通过")
+        else:
+            print("❌ 部分集成测试失败")
+        
+        return success
     
     def run_frontend_tests(self):
         """运行前端测试"""
@@ -374,12 +385,39 @@ def run_mcp_tests():
 def run_integration_tests():
     """运行集成测试"""
     print("=== 运行集成测试 ===")
-    test_suite = unittest.TestSuite()
     
-    # 集成测试目录为空，暂时跳过
-    print("🟡 集成测试待规划")
+    success = True
     
-    return test_suite
+    # 运行API响应格式测试
+    try:
+        from integration.test_api_response_format import run_api_response_format_tests
+        print("🧪 运行API响应格式测试...")
+        if not run_api_response_format_tests():
+            success = False
+    except ImportError as e:
+        print(f"⚠️ API响应格式测试模块无法导入: {e}")
+    except Exception as e:
+        print(f"❌ API响应格式测试执行失败: {e}")
+        success = False
+    
+    # 运行前端集成测试
+    try:
+        from integration.test_frontend_integration import run_frontend_integration_tests
+        print("🧪 运行前端集成测试...")
+        if not run_frontend_integration_tests():
+            success = False
+    except ImportError as e:
+        print(f"⚠️ 前端集成测试模块无法导入: {e}")
+    except Exception as e:
+        print(f"❌ 前端集成测试执行失败: {e}")
+        success = False
+    
+    if success:
+        print("✅ 所有集成测试通过")
+    else:
+        print("❌ 部分集成测试失败")
+    
+    return success
 
 def run_tests(test_type="all", category="all", mode="fast"):
     """根据指定类型和类别运行测试"""

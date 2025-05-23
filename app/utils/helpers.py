@@ -25,7 +25,8 @@ def validate_request(request_obj, required_fields=None):
     if required_fields:
         for field in required_fields:
             if field == 'file':
-                if 'file' not in request_obj.files:
+                # Check for either 'file' or 'audio' field
+                if 'file' not in request_obj.files and 'audio' not in request_obj.files:
                     return False
             elif field not in request_obj.form:
                 return False

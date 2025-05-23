@@ -10,6 +10,7 @@ API接口测试脚本
 4. 进度监控（SSE连接）
 5. 文件下载
 6. 资源清理
+7. 基础端点测试
 """
 
 import os
@@ -21,6 +22,7 @@ import unittest
 import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from io import BytesIO
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -59,6 +61,101 @@ class APITest(unittest.TestCase):
                 requests.delete(f"{TEST_HOST}/api/cleanup/{job_id}")
             except:
                 pass
+
+    def test_00_basic_api_endpoints(self):
+        """测试基础API端点"""
+        print("\n===== 测试基础API端点 =====")
+        
+        # 测试健康检查
+        response = requests.get(f"{TEST_HOST}/health")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data.get('status'), 'success')
+        print("✅ 健康检查正常")
+        
+        # 测试获取模型列表
+        response = requests.get(f"{TEST_HOST}/api/models")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data.get('status'), 'success')
+        print("✅ 模型列表API正常")
+        
+        # 测试获取支持格式
+        response = requests.get(f"{TEST_HOST}/api/formats")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data.get('status'), 'success')
+        print("✅ 格式列表API正常")
+        
+        # 测试获取音质选项
+        response = requests.get(f"{TEST_HOST}/api/qualities")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data.get('status'), 'success')
+        print("✅ 音质选项API正常")
+
+    def test_00_api_field_names(self):
+        """测试不同字段名的API支持"""
+        print("\n===== 测试API字段名兼容性 =====")
+        
+        # 创建模拟音频文件
+        mock_audio_content = b"mock audio file content for testing"
+        
+        # 测试使用'audio'字段名
+        print("测试'audio'字段名...")
+        files = {'audio': ('test.mp3', BytesIO(mock_audio_content), 'audio/mp3')}
+        data = {
+            'model': 'htdemucs',
+            'output_format': 'wav',
+            'audio_quality': 'high'
+        }
+        
+        response = requests.post(f"{TEST_HOST}/api/process", files=files, data=data)
+        if response.status_code == 200:
+            response_data = response.json()
+            if response_data.get('status') == 'success':
+                job_id = response_data.get('data', {}).get('job_id')
+                if job_id:
+                    self.job_ids.append(job_id)
+                print("✅ 'audio'字段名测试成功")
+            else:
+                print(f"⚠️ 'audio'字段名响应异常: {response_data}")
+        else:
+            print(f"⚠️ 'audio'字段名请求失败: {response.status_code}")
+        
+        # 测试使用'file'字段名
+        print("测试'file'字段名...")
+        files = {'file': ('test.mp3', BytesIO(mock_audio_content), 'audio/mp3')}
+        
+        response = requests.post(f"{TEST_HOST}/api/process", files=files, data=data)
+        if response.status_code == 200:
+            response_data = response.json()
+            if response_data.get('status') == 'success':
+                job_id = response_data.get('data', {}).get('job_id')
+                if job_id:
+                    self.job_ids.append(job_id)
+                print("✅ 'file'字段名测试成功")
+            else:
+                print(f"⚠️ 'file'字段名响应异常: {response_data}")
+        else:
+            print(f"⚠️ 'file'字段名请求失败: {response.status_code}")
+
+    def test_00_api_error_handling(self):
+        """测试API错误处理"""
+        print("\n===== 测试API错误处理 =====")
+        
+        # 测试没有文件的请求
+        response = requests.post(f"{TEST_HOST}/api/process")
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertEqual(data.get('status'), 'error')
+        self.assertIn('No file provided', data.get('message', ''))
+        print("✅ 无文件请求错误处理正常")
+        
+        # 测试无效的任务ID查询
+        response = requests.get(f"{TEST_HOST}/api/status/invalid-job-id")
+        self.assertEqual(response.status_code, 404)
+        print("✅ 无效任务ID错误处理正常")
     
     def test_01_list_models(self):
         """测试获取可用模型列表"""

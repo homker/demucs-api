@@ -22,20 +22,27 @@
         </div>
     </header>
     
-    <div class="container container-sm">
+    <div class="container container-sm docs-content">
         <!-- 目录 -->
-        <div class="card" style="background: #f8f9fa;">
-            <h3>📋 目录</h3>
-            <ul style="list-style: none; padding-left: 0;">
-                <li style="margin: 8px 0;"><a href="#quick-start" class="text-primary">🚀 快速开始</a></li>
-                <li style="margin: 8px 0;"><a href="#models" class="text-primary">🎯 模型选择指南</a></li>
-                <li style="margin: 8px 0;"><a href="#quality" class="text-primary">🎵 音质设置</a></li>
-                <li style="margin: 8px 0;"><a href="#formats" class="text-primary">📁 输出格式</a></li>
-                <li style="margin: 8px 0;"><a href="#stems" class="text-primary">🎼 音轨类型</a></li>
-                <li style="margin: 8px 0;"><a href="#advanced" class="text-primary">⚙️ 高级使用</a></li>
-                <li style="margin: 8px 0;"><a href="#troubleshooting" class="text-primary">🔧 故障排除</a></li>
-                <li style="margin: 8px 0;"><a href="#tips" class="text-primary">💡 最佳实践</a></li>
-            </ul>
+        <div class="card" id="docs-toc">
+            <div class="toc-header">
+                <h3>📋 目录</h3>
+                <button class="toc-toggle" onclick="toggleToc()" title="折叠/展开目录">
+                    <span id="toc-icon">📖</span>
+                </button>
+            </div>
+            <div class="toc-content" id="toc-content">
+                <ul style="list-style: none; padding-left: 0;">
+                    <li style="margin: 8px 0;"><a href="#quick-start" class="text-primary">🚀 快速开始</a></li>
+                    <li style="margin: 8px 0;"><a href="#models" class="text-primary">🎯 模型选择指南</a></li>
+                    <li style="margin: 8px 0;"><a href="#quality" class="text-primary">🎵 音质设置</a></li>
+                    <li style="margin: 8px 0;"><a href="#formats" class="text-primary">📁 输出格式</a></li>
+                    <li style="margin: 8px 0;"><a href="#stems" class="text-primary">🎼 音轨类型</a></li>
+                    <li style="margin: 8px 0;"><a href="#advanced" class="text-primary">⚙️ 高级使用</a></li>
+                    <li style="margin: 8px 0;"><a href="#troubleshooting" class="text-primary">🔧 故障排除</a></li>
+                    <li style="margin: 8px 0;"><a href="#tips" class="text-primary">💡 最佳实践</a></li>
+                </ul>
+            </div>
         </div>
 
         <!-- 快速开始 -->
@@ -127,9 +134,9 @@
                     </div>
                 </div>
 
-                <div class="card card-secondary">
+                <div class="card card-secondary" style="border-left: 4px solid #6c757d;">
                     <div class="card-header">
-                        <h5>mdx_q <span class="badge">快速</span></h5>
+                        <h5>mdx_q <span class="badge" style="background: #6c757d;">快速</span></h5>
                     </div>
                     <div class="card-body">
                         <p><strong>特点：</strong> 快速处理版本</p>
@@ -156,47 +163,49 @@
             <h2>🎵 音质设置</h2>
             <p>根据用途选择合适的音质设置，平衡音质、文件大小和处理时间：</p>
             
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>质量等级</th>
-                        <th>比特率</th>
-                        <th>采样率</th>
-                        <th>文件大小</th>
-                        <th>适用场景</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>lossless</strong> <span class="badge new">无损</span></td>
-                        <td>N/A</td>
-                        <td>44kHz</td>
-                        <td>最大</td>
-                        <td>专业制作、母带处理</td>
-                    </tr>
-                    <tr class="table-hover">
-                        <td><strong>high</strong> <span class="badge">推荐</span></td>
-                        <td>320kbps</td>
-                        <td>44kHz</td>
-                        <td>较大</td>
-                        <td>日常使用、高质量需求</td>
-                    </tr>
-                    <tr>
-                        <td><strong>medium</strong></td>
-                        <td>192kbps</td>
-                        <td>44kHz</td>
-                        <td>中等</td>
-                        <td>移动设备、网络分享</td>
-                    </tr>
-                    <tr>
-                        <td><strong>low</strong></td>
-                        <td>128kbps</td>
-                        <td>22kHz</td>
-                        <td>最小</td>
-                        <td>快速预览、测试用途</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="table-container">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>质量等级</th>
+                            <th>比特率</th>
+                            <th>采样率</th>
+                            <th>文件大小</th>
+                            <th>适用场景</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>lossless</strong> <span class="badge new">无损</span></td>
+                            <td>N/A</td>
+                            <td>44kHz</td>
+                            <td>最大</td>
+                            <td>专业制作、母带处理</td>
+                        </tr>
+                        <tr class="table-hover">
+                            <td><strong>high</strong> <span class="badge">推荐</span></td>
+                            <td>320kbps</td>
+                            <td>44kHz</td>
+                            <td>较大</td>
+                            <td>日常使用、高质量需求</td>
+                        </tr>
+                        <tr>
+                            <td><strong>medium</strong></td>
+                            <td>192kbps</td>
+                            <td>44kHz</td>
+                            <td>中等</td>
+                            <td>移动设备、网络分享</td>
+                        </tr>
+                        <tr>
+                            <td><strong>low</strong></td>
+                            <td>128kbps</td>
+                            <td>22kHz</td>
+                            <td>最小</td>
+                            <td>快速预览、测试用途</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
             <div class="warning-box">
                 <h4>⚠️ 重要提醒</h4>
@@ -497,5 +506,57 @@ eventSource.onmessage = (event) => {
 
     <!-- JavaScript文件 -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- 目录折叠功能 -->
+    <script>
+        // 目录折叠功能
+        function toggleToc() {
+            const tocContent = document.getElementById('toc-content');
+            const tocIcon = document.getElementById('toc-icon');
+            const tocContainer = document.getElementById('docs-toc');
+            
+            if (tocContent.classList.contains('collapsed')) {
+                // 展开目录
+                tocContent.classList.remove('collapsed');
+                tocContainer.classList.remove('collapsed');
+                tocIcon.textContent = '📖';
+                localStorage.setItem('toc-collapsed', 'false');
+            } else {
+                // 折叠目录
+                tocContent.classList.add('collapsed');
+                tocContainer.classList.add('collapsed');
+                tocIcon.textContent = '📋';
+                localStorage.setItem('toc-collapsed', 'true');
+            }
+        }
+        
+        // 页面加载时恢复折叠状态
+        document.addEventListener('DOMContentLoaded', function() {
+            const isCollapsed = localStorage.getItem('toc-collapsed') === 'true';
+            if (isCollapsed) {
+                const tocContent = document.getElementById('toc-content');
+                const tocIcon = document.getElementById('toc-icon');
+                const tocContainer = document.getElementById('docs-toc');
+                
+                tocContent.classList.add('collapsed');
+                tocContainer.classList.add('collapsed');
+                tocIcon.textContent = '📋';
+            }
+        });
+        
+        // 平滑滚动到锚点
+        document.querySelectorAll('#docs-toc a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html> 

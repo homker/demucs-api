@@ -187,5 +187,113 @@ curl -X POST http://localhost:8080/api/process \
     <!-- JavaScript文件 -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/audio-processor.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/debug.js') }}"></script>
+    
+    <script>
+        // 初始化音频处理器
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 页面加载完成，初始化音频处理器');
+            
+            // 检查音频处理器是否可用
+            if (window.AudioProcessor) {
+                window.AudioProcessor.init();
+                console.log('✅ 音频处理器初始化成功');
+                
+                // 添加调试功能
+                if (location.search.includes('debug=1')) {
+                    addDebugControls();
+                }
+            } else {
+                console.error('❌ 音频处理器未找到');
+            }
+            
+            // 添加质量选择变化监听
+            const qualitySelect = document.getElementById('audioQuality');
+            const qualityDescription = document.getElementById('qualityDescription');
+            
+            if (qualitySelect && qualityDescription) {
+                qualitySelect.addEventListener('change', function() {
+                    const descriptions = {
+                        'high': '质量越高，文件越大但音质越好',
+                        'medium': '平衡文件大小和音质，适合大多数用途',
+                        'low': '文件最小，音质一般，适合快速预览',
+                        'lossless': '最高音质，无损压缩，文件较大'
+                    };
+                    qualityDescription.textContent = descriptions[this.value] || '请选择音频质量';
+                });
+            }
+        });
+        
+        // 调试功能
+        function addDebugControls() {
+            const debugPanel = document.createElement('div');
+            debugPanel.innerHTML = `
+                <div style="position: fixed; top: 10px; right: 10px; background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 5px; z-index: 1000; max-width: 300px;">
+                    <h5>🐛 调试面板</h5>
+                    <button onclick="testCurrentTask()" class="btn btn-sm btn-primary">测试当前任务</button>
+                    <button onclick="testMockCompletion()" class="btn btn-sm btn-success">测试模拟完成</button>
+                    <button onclick="clearResults()" class="btn btn-sm btn-secondary">清空结果</button>
+                    <div id="debugOutput" style="margin-top: 10px; font-size: 12px; max-height: 200px; overflow-y: auto;"></div>
+                </div>
+            `;
+            document.body.appendChild(debugPanel);
+        }
+        
+        // 测试当前任务
+        async function testCurrentTask() {
+            const jobId = '0a5dbedc-f4e8-459c-a606-16c47001ea76'; // 使用当前任务ID
+            debugLog('正在检查任务: ' + jobId);
+            
+            try {
+                const response = await fetch('/api/status/' + jobId);
+                const result = await response.json();
+                debugLog('API响应: ' + JSON.stringify(result));
+                
+                if (result.status === 'success') {
+                    debugLog('调用showResults...');
+                    window.AudioProcessor.showResults(result.data);
+                } else {
+                    debugLog('任务未找到或未完成');
+                }
+            } catch (error) {
+                debugLog('错误: ' + error.message);
+            }
+        }
+        
+        // 测试模拟完成状态
+        function testMockCompletion() {
+            debugLog('测试模拟完成状态...');
+            const mockData = {
+                job_id: '0a5dbedc-f4e8-459c-a606-16c47001ea76',
+                progress: 100,
+                status: 'completed',
+                message: '音频分离完成，格式: MP3，质量: low',
+                result_file: '/path/to/result.zip'
+            };
+            
+            debugLog('调用showResults: ' + JSON.stringify(mockData));
+            window.AudioProcessor.showResults(mockData);
+        }
+        
+        // 清空结果
+        function clearResults() {
+            const results = document.getElementById('results');
+            if (results) {
+                results.style.display = 'none';
+                results.innerHTML = '';
+                debugLog('结果已清空');
+            }
+        }
+        
+        // 调试日志
+        function debugLog(message) {
+            console.log('[DEBUG]', message);
+            const output = document.getElementById('debugOutput');
+            if (output) {
+                output.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+                output.scrollTop = output.scrollHeight;
+            }
+        }
+    </script>
 </body>
 </html> 

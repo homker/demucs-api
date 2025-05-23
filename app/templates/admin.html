@@ -287,6 +287,30 @@
             document.getElementById('completed-tasks').textContent = summary.completed_tasks;
             document.getElementById('processing-tasks').textContent = summary.processing_tasks;
             document.getElementById('old-tasks').textContent = summary.old_tasks;
+            
+            // 添加扫描性能信息显示
+            if (summary.scan_duration !== undefined) {
+                const scanInfo = document.getElementById('scan-info');
+                if (!scanInfo) {
+                    // 创建扫描信息元素
+                    const infoDiv = document.createElement('div');
+                    infoDiv.id = 'scan-info';
+                    infoDiv.className = 'scan-performance-info mt-2';
+                    infoDiv.innerHTML = `
+                        <small class="text-muted">
+                            📊 扫描耗时: <span id="scan-duration">${summary.scan_duration.toFixed(2)}秒</span> | 
+                            扫描文件: <span id="scan-files">${summary.scanned_files}</span>个
+                            ${summary.scan_limited ? ' <span class="badge badge-warning">已限制</span>' : ''}
+                            ${summary.tasks_truncated ? ' <span class="badge badge-info">任务已截断</span>' : ''}
+                        </small>
+                    `;
+                    document.querySelector('.grid-4').after(infoDiv);
+                } else {
+                    // 更新现有信息
+                    document.getElementById('scan-duration').textContent = `${summary.scan_duration.toFixed(2)}秒`;
+                    document.getElementById('scan-files').textContent = summary.scanned_files;
+                }
+            }
         }
 
         // 更新任务表格
@@ -406,12 +430,31 @@
                     </div>
                 `;
             }
-            document.getElementById('delete-modal').style.display = 'flex';
+            // 修复弹窗显示逻辑
+            const modal = document.getElementById('delete-modal');
+            modal.style.display = 'flex';
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                modal.style.opacity = '1';
+            }, 10);
+            
+            // 添加点击背景关闭功能
+            modal.onclick = function(e) {
+                if (e.target === modal) {
+                    closeDeleteModal();
+                }
+            };
         }
 
         // 确认删除
         async function confirmDelete() {
             if (!deleteTaskId) return;
+
+            // 显示加载状态
+            const confirmBtn = document.querySelector('#delete-modal .btn-danger');
+            const originalText = confirmBtn.textContent;
+            confirmBtn.textContent = '删除中...';
+            confirmBtn.disabled = true;
 
             try {
                 const response = await fetch('/admin/api/tasks/delete', {
@@ -431,6 +474,10 @@
                 }
             } catch (error) {
                 window.showMessage('删除失败: ' + error.message, 'error');
+            } finally {
+                // 恢复按钮状态
+                confirmBtn.textContent = originalText;
+                confirmBtn.disabled = false;
             }
 
             closeDeleteModal();
@@ -438,15 +485,28 @@
 
         // 关闭删除模态框
         function closeDeleteModal() {
-            document.getElementById('delete-modal').style.display = 'none';
-            deleteTaskId = null;
+            const modal = document.getElementById('delete-modal');
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                modal.style.display = 'none';
+                deleteTaskId = null;
+            }, 300);
         }
 
         // 清理过期文件
         async function cleanupOldFiles() {
-            if (!confirm('确定要清理所有过期文件吗？')) return;
+            // 创建自定义确认弹窗
+            const confirmed = await showConfirmDialog(
+                '清理过期文件',
+                '确定要清理所有过期文件吗？这将删除超过保留期限的所有文件。',
+                '清理',
+                'warning'
+            );
+            
+            if (!confirmed) return;
 
             try {
+                window.showMessage('正在清理过期文件...', 'info');
                 const response = await fetch('/admin/api/cleanup/old', {
                     method: 'POST'
                 });
@@ -465,9 +525,17 @@
 
         // 清理所有文件
         async function cleanupAllFiles() {
-            if (!confirm('确定要清理所有文件吗？此操作无法撤销！')) return;
+            const confirmed = await showConfirmDialog(
+                '⚠️ 危险操作',
+                '确定要清理所有文件吗？这将删除所有上传和输出文件，此操作无法撤销！',
+                '确认清理',
+                'danger'
+            );
+            
+            if (!confirmed) return;
 
             try {
+                window.showMessage('正在清理所有文件...', 'info');
                 const response = await fetch('/admin/api/cleanup/all', {
                     method: 'POST'
                 });
@@ -481,6 +549,48 @@
                 }
             } catch (error) {
                 window.showMessage('清理失败: ' + error.message, 'error');
+            }
+        }
+
+        // 自定义确认对话框
+        function showConfirmDialog(title, message, confirmText = '确认', type = 'warning') {
+            return new Promise((resolve) => {
+                // 创建对话框HTML
+                const dialogHtml = `
+                    <div id="custom-confirm-modal" class="modal" style="display: flex;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3>${title}</h3>
+                                <button class="modal-close" onclick="closeCustomConfirm(false)">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <p>${message}</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" onclick="closeCustomConfirm(false)">取消</button>
+                                <button class="btn btn-${type}" onclick="closeCustomConfirm(true)">${confirmText}</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // 添加到页面
+                document.body.insertAdjacentHTML('beforeend', dialogHtml);
+                
+                // 设置全局回调
+                window.customConfirmResolve = resolve;
+            });
+        }
+
+        // 关闭自定义确认对话框
+        function closeCustomConfirm(result) {
+            const modal = document.getElementById('custom-confirm-modal');
+            if (modal) {
+                modal.remove();
+            }
+            if (window.customConfirmResolve) {
+                window.customConfirmResolve(result);
+                delete window.customConfirmResolve;
             }
         }
 

@@ -1,0 +1,100 @@
+{
+  "timestamp": "2025-05-23T19:23:13.767292",
+  "total_tests": 10,
+  "passed_tests": 10,
+  "failed_tests": 0,
+  "skipped_tests": 0,
+  "test_details": [
+    {
+      "name": "Python版本检查",
+      "command": "python --version",
+      "returncode": 0,
+      "stdout": "Python 3.12.7\n",
+      "stderr": "",
+      "execution_time": 0.009246826171875,
+      "status": "passed"
+    },
+    {
+      "name": "关键依赖检查",
+      "command": "pip list | grep -E '(flask|requests|torch)'",
+      "returncode": 0,
+      "stdout": "requests                          2.31.0\nrequests-file                     1.5.1\nrequests-toolbelt                 1.0.0\ntorch                             2.7.0\ntorchaudio                        2.7.0\n",
+      "stderr": "",
+      "execution_time": 0.30152082443237305,
+      "status": "passed"
+    },
+    {
+      "name": "项目结构检查",
+      "command": "ls -la ../app/",
+      "returncode": 0,
+      "stdout": "total 24\n-rw-r--r--   1 liujiacheng  staff   176  5 22 15:36 __init__.py\ndrwxr-xr-x@  5 liujiacheng  staff   160  5 23 17:32 __pycache__\ndrwxr-xr-x  11 liujiacheng  staff   352  5 23 09:37 .\ndrwxr-xr-x  22 liujiacheng  staff   704  5 23 19:18 ..\n-rw-r--r--@  1 liujiacheng  staff  3625  5 23 16:22 config.py\n-rw-r--r--@  1 liujiacheng  staff  2899  5 23 17:32 factory.py\ndrwxr-xr-x   8 liujiacheng  staff   256  5 23 15:57 routes\ndrwxr-xr-x   7 liujiacheng  staff   224  5 23 10:51 services\ndrwxr-xr-x@  4 liujiacheng  staff   128  5 23 17:42 static\ndrwxr-xr-x  10 liujiacheng  staff   320  5 23 17:53 templates\ndrwxr-xr-x   6 liujiacheng  staff   192  5 22 15:36 utils\n",
+      "stderr": "",
+      "execution_time": 0.006599903106689453,
+      "status": "passed"
+    },
+    {
+      "name": "模板文件检查: app/templates/index.html",
+      "command": "wc -l ../app/templates/index.html",
+      "returncode": 0,
+      "stdout": "     222 ../app/templates/index.html\n",
+      "stderr": "",
+      "execution_time": 0.0069828033447265625,
+      "status": "passed"
+    },
+    {
+      "name": "模板文件检查: app/templates/docs.html",
+      "command": "wc -l ../app/templates/docs.html",
+      "returncode": 0,
+      "stdout": "     500 ../app/templates/docs.html\n",
+      "stderr": "",
+      "execution_time": 0.005961179733276367,
+      "status": "passed"
+    },
+    {
+      "name": "模板文件检查: app/templates/test.html",
+      "command": "wc -l ../app/templates/test.html",
+      "returncode": 0,
+      "stdout": "     694 ../app/templates/test.html\n",
+      "stderr": "",
+      "execution_time": 0.0048809051513671875,
+      "status": "passed"
+    },
+    {
+      "name": "模板文件检查: app/templates/admin.html",
+      "command": "wc -l ../app/templates/admin.html",
+      "returncode": 0,
+      "stdout": "     701 ../app/templates/admin.html\n",
+      "stderr": "",
+      "execution_time": 0.005659818649291992,
+      "status": "passed"
+    },
+    {
+      "name": "模板文件检查: app/templates/admin_login.html",
+      "command": "wc -l ../app/templates/admin_login.html",
+      "returncode": 0,
+      "stdout": "     356 ../app/templates/admin_login.html\n",
+      "stderr": "",
+      "execution_time": 0.005185842514038086,
+      "status": "passed"
+    },
+    {
+      "name": "静态文件检查: app/static/css/main.css",
+      "command": "ls -la ../app/static/css/main.css",
+      "returncode": 0,
+      "stdout": "-rw-r--r--@ 1 liujiacheng  staff  28912  5 23 19:01 ../app/static/css/main.css\n",
+      "stderr": "",
+      "execution_time": 0.006807088851928711,
+      "status": "passed"
+    },
+    {
+      "name": "静态文件检查: app/static/js/main.js",
+      "command": "ls -la ../app/static/js/main.js",
+      "returncode": 0,
+      "stdout": "-rw-r--r--@ 1 liujiacheng  staff  21798  5 23 19:07 ../app/static/js/main.js\n",
+      "stderr": "",
+      "execution_time": 0.0068378448486328125,
+      "status": "passed"
+    }
+  ],
+  "success_rate": 100.0
+}

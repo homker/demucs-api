@@ -1,0 +1,100 @@
+{
+  "timestamp": "2025-05-23T19:22:37.201888",
+  "total_tests": 10,
+  "passed_tests": 9,
+  "failed_tests": 1,
+  "skipped_tests": 0,
+  "test_details": [
+    {
+      "name": "Python版本检查",
+      "command": "python --version",
+      "returncode": 0,
+      "stdout": "Python 3.12.7\n",
+      "stderr": "",
+      "execution_time": 0.009033203125,
+      "status": "passed"
+    },
+    {
+      "name": "关键依赖检查",
+      "command": "pip list | grep -E '(flask|requests|torch)'",
+      "returncode": 0,
+      "stdout": "requests                          2.31.0\nrequests-file                     1.5.1\nrequests-toolbelt                 1.0.0\ntorch                             2.7.0\ntorchaudio                        2.7.0\n",
+      "stderr": "",
+      "execution_time": 0.35538315773010254,
+      "status": "passed"
+    },
+    {
+      "name": "项目结构检查",
+      "command": "ls -la app/",
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "ls: app/: No such file or directory\n",
+      "execution_time": 0.004796743392944336,
+      "status": "failed"
+    },
+    {
+      "name": "模板文件检查: app/templates/index.html",
+      "command": "wc -l ../app/templates/index.html",
+      "returncode": 0,
+      "stdout": "     222 ../app/templates/index.html\n",
+      "stderr": "",
+      "execution_time": 0.006947040557861328,
+      "status": "passed"
+    },
+    {
+      "name": "模板文件检查: app/templates/docs.html",
+      "command": "wc -l ../app/templates/docs.html",
+      "returncode": 0,
+      "stdout": "     500 ../app/templates/docs.html\n",
+      "stderr": "",
+      "execution_time": 0.006517171859741211,
+      "status": "passed"
+    },
+    {
+      "name": "模板文件检查: app/templates/test.html",
+      "command": "wc -l ../app/templates/test.html",
+      "returncode": 0,
+      "stdout": "     694 ../app/templates/test.html\n",
+      "stderr": "",
+      "execution_time": 0.0051000118255615234,
+      "status": "passed"
+    },
+    {
+      "name": "模板文件检查: app/templates/admin.html",
+      "command": "wc -l ../app/templates/admin.html",
+      "returncode": 0,
+      "stdout": "     701 ../app/templates/admin.html\n",
+      "stderr": "",
+      "execution_time": 0.005441904067993164,
+      "status": "passed"
+    },
+    {
+      "name": "模板文件检查: app/templates/admin_login.html",
+      "command": "wc -l ../app/templates/admin_login.html",
+      "returncode": 0,
+      "stdout": "     356 ../app/templates/admin_login.html\n",
+      "stderr": "",
+      "execution_time": 0.005537986755371094,
+      "status": "passed"
+    },
+    {
+      "name": "静态文件检查: app/static/css/main.css",
+      "command": "ls -la ../app/static/css/main.css",
+      "returncode": 0,
+      "stdout": "-rw-r--r--@ 1 liujiacheng  staff  28912  5 23 19:01 ../app/static/css/main.css\n",
+      "stderr": "",
+      "execution_time": 0.006166219711303711,
+      "status": "passed"
+    },
+    {
+      "name": "静态文件检查: app/static/js/main.js",
+      "command": "ls -la ../app/static/js/main.js",
+      "returncode": 0,
+      "stdout": "-rw-r--r--@ 1 liujiacheng  staff  21798  5 23 19:07 ../app/static/js/main.js\n",
+      "stderr": "",
+      "execution_time": 0.006478786468505859,
+      "status": "passed"
+    }
+  ],
+  "success_rate": 90.0
+}

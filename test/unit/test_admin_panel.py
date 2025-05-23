@@ -112,6 +112,79 @@ class TestAdminPanel(unittest.TestCase):
         
         print(f"✅ 任务列表API正常，共{summary['total_tasks']}个任务，{summary['orphaned_files_count']}个孤立文件")
     
+    def test_admin_files_api_performance(self):
+        """测试Admin文件扫描API的性能"""
+        print("\n⚡ 测试Admin文件扫描性能...")
+        
+        # 先登录
+        login_data = {
+            'username': self.admin_username,
+            'password': self.admin_password
+        }
+        login_response = self.session.post(f"{self.api_base}/admin/login", data=login_data)
+        
+        if login_response.status_code == 302:
+            print("✅ 登录成功")
+        
+        # 记录API请求时间
+        start_time = time.time()
+        response = self.session.get(f"{self.api_base}/admin/api/files")
+        end_time = time.time()
+        request_duration = end_time - start_time
+        
+        print(f"⏱️  API请求耗时: {request_duration:.2f}秒")
+        
+        self.assertEqual(response.status_code, 200)
+        
+        data = response.json()
+        self.assertEqual(data['status'], 'success')
+        
+        summary = data['data']['summary']
+        
+        print(f"📈 扫描结果统计:")
+        print(f"   • 扫描耗时: {summary.get('scan_duration', 'N/A'):.2f}秒")
+        print(f"   • 扫描文件数: {summary.get('scanned_files', 'N/A')}")
+        print(f"   • 总任务数: {summary.get('total_tasks', 0)}")
+        print(f"   • 已完成任务: {summary.get('completed_tasks', 0)}")
+        print(f"   • 处理中任务: {summary.get('processing_tasks', 0)}")
+        print(f"   • 过期任务: {summary.get('old_tasks', 0)}")
+        print(f"   • 孤立文件数: {summary.get('orphaned_files_count', 0)}")
+        print(f"   • 总文件大小: {self._format_size(summary.get('total_size', 0))}")
+        
+        # 性能断言
+        self.assertLess(request_duration, 30, "API响应时间不应超过30秒")
+        
+        scan_duration = summary.get('scan_duration', 0)
+        if scan_duration > 0:
+            self.assertLess(scan_duration, 20, "文件扫描时间不应超过20秒")
+        
+        # 性能评估
+        if request_duration < 2:
+            print(f"   🚀 响应速度: 优秀 ({request_duration:.2f}s)")
+        elif request_duration < 5:
+            print(f"   👍 响应速度: 良好 ({request_duration:.2f}s)")
+        elif request_duration < 10:
+            print(f"   ⚠️  响应速度: 一般 ({request_duration:.2f}s)")
+        else:
+            print(f"   🐌 响应速度: 较慢 ({request_duration:.2f}s)")
+        
+        print("✅ 性能测试完成")
+    
+    def _format_size(self, bytes_size):
+        """格式化文件大小"""
+        if bytes_size == 0:
+            return "0 B"
+        
+        units = ['B', 'KB', 'MB', 'GB']
+        size = float(bytes_size)
+        unit_index = 0
+        
+        while size >= 1024 and unit_index < len(units) - 1:
+            size /= 1024
+            unit_index += 1
+        
+        return f"{size:.1f} {units[unit_index]}"
+    
     def test_admin_task_delete(self):
         """测试删除任务功能"""
         print("\n🗑️ 测试删除任务功能...")

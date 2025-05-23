@@ -242,7 +242,7 @@ window.DemucsUtils = {
     },
     
     // 更新进度条
-    updateProgress: function(progress, message = '', elementId = 'progressFill') {
+    updateProgress: function(progress, message = '', elementId = 'progressFill', forceShow = false) {
         const progressFill = document.getElementById(elementId);
         const progressText = document.getElementById('progressText');
         const progressContainer = document.getElementById('progressContainer');
@@ -256,7 +256,10 @@ window.DemucsUtils = {
         }
         
         if (progressContainer) {
-            progressContainer.style.display = progress > 0 ? 'block' : 'none';
+            // 修复逻辑：如果forceShow为true，或者进度 >= 0且已经在处理状态中，则显示进度条
+            if (forceShow || (progress >= 0 && (progressContainer.style.display === 'block' || progress > 0))) {
+                progressContainer.style.display = 'block';
+            }
             
             if (progress >= 100) {
                 setTimeout(() => {
@@ -479,72 +482,197 @@ window.DemucsAPI = {
 
 // SSE流处理
 window.DemucsSSE = {
+    currentEventSource: null,
+    
     // 连接SSE流
     connect: function(url, callbacks = {}) {
         this.disconnect(); // 断开现有连接
         
         console.log('连接SSE流:', url);
         
-        const eventSource = new EventSource(url);
-        window.DemucsApp.currentEventSource = eventSource;
-        
-        eventSource.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                this.handleMessage(data, callbacks);
-            } catch (error) {
-                console.error('解析SSE数据失败:', error);
-                if (callbacks.onError) {
-                    callbacks.onError(error);
+        try {
+            const eventSource = new EventSource(url);
+            this.currentEventSource = eventSource;
+            window.DemucsApp.currentEventSource = eventSource;
+            
+            // 连接成功
+            eventSource.onopen = (event) => {
+                console.log('SSE连接已建立');
+                if (callbacks.onConnect) {
+                    callbacks.onConnect();
                 }
-            }
-        };
-        
-        eventSource.onerror = (error) => {
-            console.error('SSE连接错误:', error);
+            };
+            
+            // 接收消息
+            eventSource.onmessage = (event) => {
+                try {
+                    console.log('收到SSE原始数据:', event.data);
+                    const data = JSON.parse(event.data);
+                    this.handleMessage(data, callbacks);
+                } catch (error) {
+                    console.error('解析SSE数据失败:', error, '原始数据:', event.data);
+                    if (callbacks.onError) {
+                        callbacks.onError({
+                            message: '数据解析失败',
+                            error: error,
+                            rawData: event.data
+                        });
+                    }
+                }
+            };
+            
+            // 连接错误
+            eventSource.onerror = (error) => {
+                console.error('SSE连接错误:', error);
+                console.log('EventSource readyState:', eventSource.readyState);
+                
+                // 检查连接状态
+                if (eventSource.readyState === EventSource.CLOSED) {
+                    console.log('SSE连接已关闭');
+                } else if (eventSource.readyState === EventSource.CONNECTING) {
+                    console.log('SSE正在重连...');
+                    return; // 浏览器会自动重连，不触发错误回调
+                }
+                
+                if (callbacks.onError) {
+                    callbacks.onError({
+                        message: 'SSE连接中断',
+                        error: error,
+                        readyState: eventSource.readyState
+                    });
+                }
+                
+                // 自动断开连接
+                setTimeout(() => {
+                    this.disconnect();
+                }, 1000);
+            };
+            
+            return eventSource;
+            
+        } catch (error) {
+            console.error('创建SSE连接失败:', error);
             if (callbacks.onError) {
-                callbacks.onError(error);
+                callbacks.onError({
+                    message: '无法创建SSE连接',
+                    error: error
+                });
             }
-            this.disconnect();
-        };
-        
-        return eventSource;
+            return null;
+        }
     },
     
     // 处理消息
     handleMessage: function(data, callbacks) {
-        console.log('收到SSE消息:', data);
+        console.log('处理SSE消息:', data);
         
-        switch (data.type) {
+        // 验证数据格式
+        if (!data || typeof data !== 'object') {
+            console.warn('收到无效的SSE数据格式:', data);
+            return;
+        }
+
+        // 添加完成状态标记
+        if (!this.taskCompleted) {
+            this.taskCompleted = false;
+        }
+
+        // 判断消息类型：如果没有type字段，根据数据内容推断类型
+        let messageType = data.type;
+        
+        if (!messageType) {
+            // 根据数据内容推断消息类型
+            if (typeof data.progress === 'number') {
+                if (data.status === 'completed' || data.progress >= 100) {
+                    messageType = 'completed';
+                } else if (data.status === 'error') {
+                    messageType = 'error';
+                } else {
+                    messageType = 'progress';
+                }
+            } else if (data.status === 'error') {
+                messageType = 'error';
+            } else if (data.status === 'completed') {
+                messageType = 'completed';
+            } else if (data.message === 'Stream closed') {
+                // 如果任务已完成，忽略Stream closed消息，避免干扰UI
+                if (this.taskCompleted) {
+                    console.log('任务已完成，忽略Stream closed消息');
+                    return;
+                }
+                messageType = 'end';
+            } else {
+                messageType = 'info'; // 默认为信息消息
+            }
+        }
+        
+        switch (messageType) {
             case 'progress':
                 if (callbacks.onProgress) {
                     callbacks.onProgress(data);
                 }
-                window.DemucsUtils.updateProgress(data.progress, data.message);
+                // 验证进度数据
+                if (typeof data.progress === 'number' && data.progress >= 0 && data.progress <= 100) {
+                    window.DemucsUtils.updateProgress(data.progress, data.message || `${data.progress}%`, 'progressFill', true);
+                } else {
+                    console.warn('无效的进度数据:', data.progress);
+                }
                 break;
                 
             case 'completed':
+                console.log('任务完成:', data);
+                this.taskCompleted = true; // 标记任务已完成
+                
                 if (callbacks.onCompleted) {
                     callbacks.onCompleted(data);
                 }
-                window.DemucsUtils.updateProgress(100, data.message);
+                window.DemucsUtils.updateProgress(100, data.message || '处理完成');
+                
+                // 延长断开连接的时间，确保UI有足够时间更新
+                setTimeout(() => {
+                    console.log('延时断开SSE连接...');
+                    this.disconnect();
+                }, 3000); // 从1000ms改为3000ms，给UI更多时间
                 break;
                 
             case 'error':
+                console.error('收到错误消息:', data);
                 if (callbacks.onError) {
                     callbacks.onError(data);
                 }
-                window.DemucsUtils.showMessage(data.message, 'error');
-                break;
-                
-            case 'end':
-                if (callbacks.onEnd) {
-                    callbacks.onEnd(data);
-                }
+                window.DemucsUtils.showMessage(data.message || '处理出现错误', 'error');
                 this.disconnect();
                 break;
                 
+            case 'info':
+                if (data.message) {
+                    console.log('收到信息消息:', data.message);
+                }
+                break;
+                
+            case 'warning':
+                if (data.message) {
+                    window.DemucsUtils.showMessage(data.message, 'warning');
+                }
+                break;
+                
+            case 'end':
+                console.log('收到结束信号');
+                // 如果任务已完成，不要立即断开连接，让UI有时间显示结果
+                if (this.taskCompleted) {
+                    console.log('任务已完成，延迟断开连接');
+                    setTimeout(() => this.disconnect(), 2000);
+                } else {
+                    console.log('任务未完成，立即断开连接');
+                    if (callbacks.onEnd) {
+                        callbacks.onEnd(data);
+                    }
+                    this.disconnect();
+                }
+                break;
+                
             default:
+                console.log('收到其他类型消息:', messageType, data);
                 if (callbacks.onMessage) {
                     callbacks.onMessage(data);
                 }
@@ -553,10 +681,41 @@ window.DemucsSSE = {
     
     // 断开连接
     disconnect: function() {
+        if (this.currentEventSource) {
+            console.log('断开SSE连接');
+            this.currentEventSource.close();
+            this.currentEventSource = null;
+        }
+        
         if (window.DemucsApp.currentEventSource) {
             window.DemucsApp.currentEventSource.close();
             window.DemucsApp.currentEventSource = null;
-            console.log('SSE连接已断开');
+        }
+        
+        // 重置完成状态标记
+        this.taskCompleted = false;
+    },
+    
+    // 检查连接状态
+    isConnected: function() {
+        return this.currentEventSource && this.currentEventSource.readyState === EventSource.OPEN;
+    },
+    
+    // 获取连接状态描述
+    getConnectionStatus: function() {
+        if (!this.currentEventSource) {
+            return 'disconnected';
+        }
+        
+        switch (this.currentEventSource.readyState) {
+            case EventSource.CONNECTING:
+                return 'connecting';
+            case EventSource.OPEN:
+                return 'connected';
+            case EventSource.CLOSED:
+                return 'closed';
+            default:
+                return 'unknown';
         }
     }
 };

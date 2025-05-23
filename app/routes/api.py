@@ -71,12 +71,15 @@ def process_audio():
     Start audio separation process
     Returns a job ID that can be used to track progress and download results
     """
-    # Validate request
-    if not validate_request(request, ['file']):
+    # Validate request - check for either 'file' or 'audio' field
+    has_file = 'file' in request.files
+    has_audio = 'audio' in request.files
+    
+    if not has_file and not has_audio:
         return create_error_response("No file provided")
     
-    # Get uploaded file
-    file = request.files['file']
+    # Get uploaded file from either 'file' or 'audio' field
+    file = request.files.get('file') or request.files.get('audio')
     
     # Check if file type is allowed
     if not file or not allowed_file(file.filename):
