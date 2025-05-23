@@ -11,6 +11,7 @@ class Config:
     
     # API设置
     BASE_URL = os.environ.get('BASE_URL', '')  # API基础路径，例如/demucs
+    APPLICATION_ROOT = os.environ.get('APPLICATION_ROOT', BASE_URL)  # Flask应用根路径
     
     # Admin settings
     ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN', 'admin-token-12345')  # 用于管理接口认证的令牌
