@@ -10,13 +10,22 @@ main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 def index():
-    """Main application page"""
-    return render_template('index.html')
+    """Main page"""
+    base_url = current_app.config.get('BASE_URL', '')
+    return render_template('index.html', base_url=base_url)
 
 @main_bp.route('/health')
 def health():
     """Health check endpoint"""
-    return create_success_response({'status': 'ok'})
+    return {
+        'status': 'healthy',
+        'service': 'demucs-audio-separator'
+    }
+
+@main_bp.route('/test')
+def test_redirect():
+    """Redirect /test to /test/mcp"""
+    return redirect(url_for('mcp_test'))
 
 def init_app(app):
     """Initialize main routes"""

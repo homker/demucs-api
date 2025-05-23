@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP 音频分离服务器测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f7;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #1d1d1f;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h2 {
+            color: #424245;
+            border-bottom: 2px solid #007aff;
+            padding-bottom: 10px;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #d1d1d6;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #007aff, #00d4aa);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+        }
+        
+        select {
+            margin: 10px 0;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+        }
+        
+        .nav-link {
+            display: inline-block;
+            margin: 10px 0;
+            color: #007aff;
+            text-decoration: none;
+        }
+        
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 MCP 音频分离服务器测试</h1>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <a href="{{ url_for('index') }}" class="nav-link">← 返回主页</a>
+        </div>
+        
+        <div class="grid">
+            <div class="test-section">
+                <h2>服务器状态</h2>
+                <button onclick="checkHealth()">检查健康状态</button>
+                <button onclick="getCapabilities()">获取服务器能力</button>
+                <div id="healthOutput" class="output" style="min-height: 100px;"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2>工具和资源</h2>
+                <button onclick="listTools()">列出工具</button>
+                <button onclick="listResources()">列出资源</button>
+                <button onclick="getModels()">获取模型</button>
+                <div id="toolsOutput" class="output" style="min-height: 100px;"></div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>音频分离测试</h2>
+            <div style="margin: 20px 0;">
+                <label>模型选择:</label>
+                <select id="modelSelect">
+                    <option value="htdemucs">htdemucs - 默认高质量</option>
+                    <option value="htdemucs_ft">htdemucs_ft - 微调版本</option>
+                    <option value="htdemucs_6s">htdemucs_6s - 6音轨版本</option>
+                    <option value="mdx">mdx - 平衡型</option>
+                    <option value="mdx_q">mdx_q - 快速版本</option>
+                </select>
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <label>音轨选择:</label><br>
+                <label><input type="checkbox" value="vocals" checked> 人声</label>
+                <label><input type="checkbox" value="drums"> 鼓点</label>
+                <label><input type="checkbox" value="bass"> 贝斯</label>
+                <label><input type="checkbox" value="other"> 其他</label>
+                <label><input type="checkbox" value="piano"> 钢琴</label>
+                <label><input type="checkbox" value="guitar"> 吉他</label>
+            </div>
+            
+            <button onclick="startAudioSeparation()">开始模拟音频分离</button>
+            <button onclick="stopStream()">停止流</button>
+            
+            <div id="progressContainer" style="display: none;">
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill" style="width: 0%;"></div>
+                </div>
+                <div id="progressText">准备中...</div>
+            </div>
+            
+            <div id="separationOutput" class="output" style="min-height: 200px;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>实时日志</h2>
+            <button onclick="clearLogs()">清空日志</button>
+            <div id="logOutput" class="output" style="min-height: 150px;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 使用模板变量或当前域名构建API_BASE
+        const API_BASE = '{{ base_url }}' || window.location.origin;
+        let currentStream = null;
+        let currentEventSource = null;
+        let requestId = 1; // JSON-RPC请求ID计数器
+        
+        function log(message, type = 'info') {
+            const logOutput = document.getElementById('logOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logEntry.className = `status ${type}`;
+            logOutput.appendChild(logEntry);
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+        
+        function clearLogs() {
+            document.getElementById('logOutput').innerHTML = '';
+        }
+        
+        // 标准JSON-RPC 2.0请求函数
+        async function sendJSONRPCRequest(method, params = {}) {
+            const request = {
+                jsonrpc: "2.0",
+                id: requestId++,
+                method: method,
+                params: params
+            };
+            
+            try {
+                log(`📤 发送JSON-RPC请求: ${method}`, 'info');
+                const response = await fetch(`${API_BASE}/mcp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(request)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    log(`❌ JSON-RPC错误: ${result.error.message}`, 'error');
+                    throw new Error(result.error.message);
+                }
+                
+                log(`📥 收到JSON-RPC响应: ${method}`, 'success');
+                return result.result;
+                
+            } catch (error) {
+                log(`❌ JSON-RPC请求失败: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+        
+        async function checkHealth() {
+            try {
+                log('检查服务器健康状态...', 'info');
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                document.getElementById('healthOutput').innerHTML = 
+                    `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                log('✅ 服务器健康检查成功', 'success');
+            } catch (error) {
+                log(`❌ 健康检查失败: ${error.message}`, 'error');
+                document.getElementById('healthOutput').innerHTML = 
+                    `<div class="status error">错误: ${error.message}</div>`;
+            }
+        }
+        
+        async function getCapabilities() {
+            try {
+                log('初始化MCP连接...', 'info');
+                const result = await sendJSONRPCRequest('initialize', {
+                    protocolVersion: '1.0',
+                    capabilities: {},
+                    clientInfo: {
+                        name: 'mcp-test-client',
+                        version: '1.0.0'
+                    }
+                });
+                
+                document.getElementById('healthOutput').innerHTML = 
+                    `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+                log('✅ MCP初始化成功', 'success');
+            } catch (error) {
+                log(`❌ MCP初始化失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function listTools() {
+            try {
+                log('获取工具列表...', 'info');
+                const result = await sendJSONRPCRequest('tools/list');
+                
+                document.getElementById('toolsOutput').innerHTML = 
+                    `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+                log('✅ 工具列表获取成功', 'success');
+            } catch (error) {
+                log(`❌ 获取工具列表失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function listResources() {
+            try {
+                log('获取资源列表...', 'info');
+                const result = await sendJSONRPCRequest('resources/list');
+                
+                document.getElementById('toolsOutput').innerHTML = 
+                    `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+                log('✅ 资源列表获取成功', 'success');
+            } catch (error) {
+                log(`❌ 获取资源列表失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function getModels() {
+            try {
+                log('获取模型列表...', 'info');
+                const result = await sendJSONRPCRequest('tools/call', {
+                    name: 'get_models',
+                    arguments: {}
+                });
+                
+                const models = JSON.parse(result.content[0].text);
+                
+                document.getElementById('toolsOutput').innerHTML = 
+                    `<pre>${JSON.stringify(models, null, 2)}</pre>`;
+                log('✅ 模型列表获取成功', 'success');
+            } catch (error) {
+                log(`❌ 获取模型列表失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function startAudioSeparation() {
+            try {
+                // 获取选择的参数
+                const model = document.getElementById('modelSelect').value;
+                const stemCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+                const stems = Array.from(stemCheckboxes).map(cb => cb.value);
+                
+                if (stems.length === 0) {
+                    log('❌ 请至少选择一个音轨类型', 'error');
+                    return;
+                }
+                
+                log(`开始音频分离 - 模型: ${model}, 音轨: ${stems.join(', ')}`, 'info');
+                
+                // 创建测试文件（实际应用中应该上传真实文件）
+                const testFilePath = '/tmp/test_audio_demo.mp3';
+                
+                // 调用音频分离工具
+                const result = await sendJSONRPCRequest('tools/call', {
+                    name: 'separate_audio',
+                    arguments: {
+                        file_path: testFilePath,
+                        model: model,
+                        stems: stems,
+                        stream_progress: true
+                    }
+                });
+                
+                const taskInfo = JSON.parse(result.content[0].text);
+                
+                if (taskInfo.error) {
+                    log(`❌ 任务启动失败: ${taskInfo.error}`, 'error');
+                    return;
+                }
+                
+                log(`✅ 任务已启动 - ID: ${taskInfo.job_id}`, 'success');
+                
+                // 显示进度条
+                document.getElementById('progressContainer').style.display = 'block';
+                
+                // 开始监听SSE流
+                if (taskInfo.stream_url) {
+                    startSSEStream(taskInfo.job_id);
+                }
+                
+                // 显示任务信息
+                document.getElementById('separationOutput').innerHTML = 
+                    `<pre>${JSON.stringify(taskInfo, null, 2)}</pre>`;
+                
+            } catch (error) {
+                log(`❌ 音频分离失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function startSSEStream(jobId) {
+            stopStream(); // 停止之前的流
+            
+            const streamUrl = `${API_BASE}/mcp/stream/${jobId}`;
+            log(`📡 连接到SSE流: ${streamUrl}`, 'info');
+            
+            currentEventSource = new EventSource(streamUrl);
+            
+            currentEventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'progress') {
+                        updateProgress(data.progress, data.message);
+                        log(`📊 进度更新: ${data.progress}% - ${data.message}`, 'info');
+                    } else if (data.type === 'completed') {
+                        updateProgress(100, data.message);
+                        log(`✅ 任务完成: ${data.message}`, 'success');
+                        if (data.output_files) {
+                            log(`📁 输出文件: ${data.output_files.join(', ')}`, 'success');
+                        }
+                    } else if (data.type === 'error') {
+                        log(`❌ 处理错误: ${data.message}`, 'error');
+                        stopStream();
+                    } else if (data.type === 'end') {
+                        log('📡 流已结束', 'info');
+                        stopStream();
+                    }
+                    
+                    // 更新输出显示
+                    const output = document.getElementById('separationOutput');
+                    output.innerHTML += `<div>${JSON.stringify(data, null, 2)}</div>\n`;
+                    output.scrollTop = output.scrollHeight;
+                    
+                } catch (error) {
+                    log(`❌ 解析SSE数据失败: ${error.message}`, 'error');
+                }
+            };
+            
+            currentEventSource.onerror = function(error) {
+                log('❌ SSE连接错误', 'error');
+                stopStream();
+            };
+        }
+        
+        function updateProgress(progress, message) {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            progressFill.style.width = `${progress}%`;
+            progressText.textContent = `${progress}% - ${message}`;
+            
+            if (progress >= 100) {
+                setTimeout(() => {
+                    document.getElementById('progressContainer').style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        function stopStream() {
+            if (currentEventSource) {
+                currentEventSource.close();
+                currentEventSource = null;
+                log('📡 SSE连接已关闭', 'info');
+            }
+        }
+        
+        // 页面加载时自动检查服务器状态
+        window.addEventListener('load', function() {
+            log('🚀 MCP测试页面已加载', 'success');
+            log(`📍 API Base URL: ${API_BASE}`, 'info');
+            log('🔌 使用标准JSON-RPC 2.0协议', 'info');
+            checkHealth();
+        });
+        
+        // 页面卸载时关闭流
+        window.addEventListener('beforeunload', function() {
+            stopStream();
+        });
+    </script>
+</body>
+</html> 

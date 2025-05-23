@@ -258,13 +258,14 @@
 <body>
     <header>
         <div class="container">
-            <h1>Demucs 音频分离工具</h1>
-            <p>基于深度学习的高质量音频源分离系统</p>
+            <h1>🎵 Demucs 音频分离工具 + 标准MCP服务器</h1>
+            <p>基于深度学习的高质量音频源分离系统，完全支持标准 <strong>MCP (Model Context Protocol)</strong> 协议</p>
             <div class="main-nav">
                 <a href="#main-content" class="nav-link">首页</a>
+                <a href="/test/mcp" class="nav-link">🔗 MCP测试</a>
+                <a href="#mcp-info" class="nav-link">📋 MCP协议</a>
                 <a href="#api-docs" class="nav-link">API文档</a>
                 <a href="#api-flow" class="nav-link">接口调用流程</a>
-                <a href="#api-testing" class="nav-link">测试指南</a>
             </div>
         </div>
     </header>
@@ -272,9 +273,19 @@
     <div class="container">
         <div id="main-content">
             <div class="card">
-                <h2>Demucs音频分离工具</h2>
+                <h2>🎵 Demucs音频分离工具</h2>
                 <p>欢迎使用Demucs音频分离工具！这个应用可以将混合音频分离成独立的音轨，如人声、鼓声、贝斯和其他乐器。</p>
+                <p>🔗 <strong>新特性：</strong>本应用现在完全支持标准 <strong>MCP (Model Context Protocol)</strong> 协议，可与Claude Desktop、Cursor等MCP客户端无缝集成！</p>
                 <p>使用下面的表单上传音频文件，选择模型和要分离的音轨，然后点击"开始分离"按钮。</p>
+                
+                <div style="text-align: center; margin: 20px 0;">
+                    <a href="/test/mcp" style="display: inline-block; background: #007aff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin: 0 10px;">
+                        🧪 MCP协议测试
+                    </a>
+                    <a href="#mcp-info" style="display: inline-block; background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin: 0 10px;">
+                        📋 查看MCP信息
+                    </a>
+                </div>
             </div>
             
             <!-- 上传和处理表单 -->
@@ -382,6 +393,102 @@
                 <li>处理大型文件可能需要较长时间，尤其是使用高质量模型时。</li>
                 <li>音频质量较好的文件通常能获得更好的分离效果。</li>
             </ul>
+            
+            <!-- MCP 协议信息部分 -->
+            <h2 id="mcp-info">🔗 MCP (Model Context Protocol) 支持</h2>
+            <div class="card">
+                <h3>✨ 标准MCP协议集成</h3>
+                <p>本应用现在完全支持 <strong>MCP (Model Context Protocol)</strong> 协议！这意味着您可以在任何支持MCP的客户端中使用我们的音频分离服务。</p>
+                
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <h4>🎯 MCP客户端配置</h4>
+                    <p><strong>服务器端点:</strong> <code>http://localhost:8080/mcp</code></p>
+                    <p><strong>协议:</strong> JSON-RPC 2.0 over HTTP</p>
+                    <p><strong>方法:</strong> POST</p>
+                    <p><strong>Content-Type:</strong> application/json</p>
+                </div>
+                
+                <h4>🛠️ 可用的MCP工具</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin: 20px 0;">
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #007aff;">
+                        <h5><strong>separate_audio</strong></h5>
+                        <p>使用Demucs模型分离音频文件</p>
+                        <p><small><strong>参数:</strong> file_path, model, stems, stream_progress</small></p>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745;">
+                        <h5><strong>get_models</strong></h5>
+                        <p>获取可用的Demucs模型列表</p>
+                        <p><small><strong>参数:</strong> 无需参数</small></p>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
+                        <h5><strong>get_job_status</strong></h5>
+                        <p>查询音频分离任务的状态</p>
+                        <p><small><strong>参数:</strong> job_id</small></p>
+                    </div>
+                </div>
+                
+                <h4>📚 可用的MCP资源</h4>
+                <ul>
+                    <li><code>demucs://docs/api</code> - 完整的API使用文档</li>
+                    <li><code>demucs://models/info</code> - 详细的模型信息和特性</li>
+                </ul>
+                
+                <h4>🌊 流式进度支持</h4>
+                <p>我们的MCP实现支持SSE (Server-Sent Events) 流式进度更新，您可以实时监控音频分离的进度：</p>
+                <code>GET http://localhost:8080/mcp/stream/{job_id}</code>
+                
+                <div style="text-align: center; margin: 20px 0;">
+                    <a href="/test/mcp" style="display: inline-block; background: #007aff; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-size: 16px;">
+                        🧪 测试MCP功能
+                    </a>
+                </div>
+                
+                <h4>📋 MCP协议使用示例</h4>
+                
+                <p><strong>1. 初始化连接:</strong></p>
+                <pre>{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "1.0",
+    "capabilities": {},
+    "clientInfo": {
+      "name": "your-client-name",
+      "version": "1.0.0"
+    }
+  }
+}</pre>
+                
+                <p><strong>2. 调用音频分离工具:</strong></p>
+                <pre>{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "separate_audio",
+    "arguments": {
+      "file_path": "/path/to/audio.mp3",
+      "model": "htdemucs",
+      "stems": ["vocals", "drums"],
+      "stream_progress": true
+    }
+  }
+}</pre>
+                
+                <p><strong>3. 获取可用工具:</strong></p>
+                <pre>{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/list",
+  "params": {}
+}</pre>
+                
+                <div class="tip">
+                    <strong>💡 集成提示:</strong> 这个标准MCP实现可以与Claude Desktop、Cursor等支持MCP的工具无缝集成。
+                    只需在客户端配置中添加我们的服务器端点即可开始使用！
+                </div>
+            </div>
             
             <!-- API文档部分 -->
             <h2 id="api-docs">API接口文档</h2>
@@ -843,6 +950,9 @@ python run_tests.py</pre>
         </div>
     </footer>
 
+    <!-- 添加MCP SSE客户端脚本 -->
+    <script src="{{ base_url }}/static/js/mcp_sse_client.js"></script>
+    
     <script>
         // 设置API基础路径，从服务器端传递
         const BASE_URL = "{{ base_url }}";
@@ -857,6 +967,49 @@ python run_tests.py</pre>
         const progressText = document.getElementById('progressText');
         const statusMessage = document.getElementById('statusMessage');
         const downloadLink = document.getElementById('downloadLink');
+        
+        // 创建MCP SSE客户端实例
+        const mcpClient = new MCPSSEClient(BASE_URL, {
+            debug: false,
+            autoReconnect: true
+        });
+        
+        // 监听进度事件
+        mcpClient.on('progress', (data) => {
+            console.log('MCP进度更新:', data);
+            
+            // 基本数据验证
+            const progressValue = typeof data.progress === 'number' ? 
+                data.progress : parseInt(data.progress, 10) || 0;
+            
+            // 更新进度条
+            progressFill.style.width = `${progressValue}%`;
+            
+            // 构建显示文本
+            const displayText = data.message ? 
+                `${progressValue}% - ${data.message}` : 
+                `${progressValue}%`;
+                
+            progressText.textContent = displayText;
+            
+            // 处理任务状态
+            if (data.status === 'completed' || data.status === '音频分离完成') {
+                statusMessage.textContent = '处理完成！';
+                statusMessage.className = 'status-message status-success';
+                submitBtn.disabled = false;
+            } else if (data.status === 'error') {
+                statusMessage.textContent = data.message || '处理出错';
+                statusMessage.className = 'status-message status-error';
+                submitBtn.disabled = false;
+            }
+        });
+        
+        // 监听连接和错误事件
+        mcpClient.on('error', (error) => {
+            console.error('MCP SSE连接错误:', error);
+            statusMessage.textContent = '与服务器的连接出现问题，请刷新页面重试';
+            statusMessage.className = 'status-message status-error';
+        });
         
         // Handle file selection
         fileInput.addEventListener('change', () => {
@@ -932,74 +1085,33 @@ python run_tests.py</pre>
                 const data = await response.json();
                 
                 if (data.status === 'success') {
-                    // Start listening for progress updates
+                    // Get the job ID
                     const jobId = data.data.job_id;
-                    const progressUrl = `${BASE_URL}${data.data.progress_url}`;
                     const downloadUrl = `${BASE_URL}${data.data.download_url}`;
                     
-                    // Set up SSE for progress updates
-                    const eventSource = new EventSource(progressUrl);
+                    // 使用MCP SSE客户端连接
+                    try {
+                        await mcpClient.connect(jobId);
+                        console.log('已连接到MCP SSE');
+                    } catch (error) {
+                        console.error('MCP SSE连接失败，回退到传统SSE:', error);
+                        // 回退到传统SSE
+                        setupTraditionalSSE(jobId, downloadUrl);
+                    }
                     
-                    eventSource.onopen = (event) => {
-                        console.log('SSE连接已建立');
-                    };
-                    
-                    eventSource.onmessage = (event) => {
-                        try {
-                            console.log('SSE原始数据:', event.data);
-                            const progress = JSON.parse(event.data);
-                            
-                            console.log('进度更新:', progress);
-                            
-                            // 基本数据验证
-                            const progressValue = typeof progress.progress === 'number' ? 
-                                progress.progress : parseInt(progress.progress, 10) || 0;
-                            
-                            // 更新进度条
-                            progressFill.style.width = `${progressValue}%`;
-                            
-                            // 构建显示文本
-                            const displayText = progress.message ? 
-                                `${progressValue}% - ${progress.message}` : 
-                                `${progressValue}%`;
-                                
-                            progressText.textContent = displayText;
-                            
-                            // Handle completion
-                            if (progress.status === 'completed' || progress.status === '音频分离完成') {
-                                eventSource.close();
-                                statusMessage.textContent = '处理完成！';
-                                statusMessage.className = 'status-message status-success';
-                                
-                                // Show download link
-                                downloadLink.href = downloadUrl;
-                                downloadLink.style.display = 'inline-block';
-                                
-                                // Reset form
-                                submitBtn.disabled = false;
+                    // 设置下载链接
+                    downloadLink.href = downloadUrl;
+                    downloadLink.addEventListener('click', () => {
+                        // 在下载完成后自动清理资源
+                        setTimeout(async () => {
+                            try {
+                                await mcpClient.cleanup(jobId);
+                                console.log('资源已清理');
+                            } catch (error) {
+                                console.error('清理资源出错:', error);
                             }
-                            
-                            // Handle error
-                            if (progress.status === 'error') {
-                                eventSource.close();
-                                statusMessage.textContent = progress.message || '处理出错';
-                                statusMessage.className = 'status-message status-error';
-                                submitBtn.disabled = false;
-                            }
-                        } catch (error) {
-                            console.error('解析SSE消息出错:', error);
-                            statusMessage.textContent = `解析进度更新出错: ${error.message}`;
-                            statusMessage.className = 'status-message status-error';
-                        }
-                    };
-                    
-                    eventSource.onerror = (error) => {
-                        console.error('SSE连接错误:', error);
-                        eventSource.close();
-                        statusMessage.textContent = '接收进度更新时出错';
-                        statusMessage.className = 'status-message status-error';
-                        submitBtn.disabled = false;
-                    };
+                        }, 3000);
+                    });
                     
                 } else {
                     throw new Error(data.message || '未知错误');
@@ -1012,6 +1124,71 @@ python run_tests.py</pre>
                 submitBtn.disabled = false;
             }
         });
+        
+        // 传统SSE回退函数
+        function setupTraditionalSSE(jobId, downloadUrl) {
+            const progressUrl = `${BASE_URL}/api/progress/${jobId}`;
+            const eventSource = new EventSource(progressUrl);
+            
+            eventSource.onopen = (event) => {
+                console.log('传统SSE连接已建立');
+            };
+            
+            eventSource.onmessage = (event) => {
+                try {
+                    console.log('传统SSE原始数据:', event.data);
+                    const progress = JSON.parse(event.data);
+                    
+                    // 基本数据验证
+                    const progressValue = typeof progress.progress === 'number' ? 
+                        progress.progress : parseInt(progress.progress, 10) || 0;
+                    
+                    // 更新进度条
+                    progressFill.style.width = `${progressValue}%`;
+                    
+                    // 构建显示文本
+                    const displayText = progress.message ? 
+                        `${progressValue}% - ${progress.message}` : 
+                        `${progressValue}%`;
+                        
+                    progressText.textContent = displayText;
+                    
+                    // Handle completion
+                    if (progress.status === 'completed' || progress.status === '音频分离完成') {
+                        eventSource.close();
+                        statusMessage.textContent = '处理完成！';
+                        statusMessage.className = 'status-message status-success';
+                        
+                        // Show download link
+                        downloadLink.href = downloadUrl;
+                        downloadLink.style.display = 'inline-block';
+                        
+                        // Reset form
+                        submitBtn.disabled = false;
+                    }
+                    
+                    // Handle error
+                    if (progress.status === 'error') {
+                        eventSource.close();
+                        statusMessage.textContent = progress.message || '处理出错';
+                        statusMessage.className = 'status-message status-error';
+                        submitBtn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('解析SSE消息出错:', error);
+                    statusMessage.textContent = `解析进度更新出错: ${error.message}`;
+                    statusMessage.className = 'status-message status-error';
+                }
+            };
+            
+            eventSource.onerror = (error) => {
+                console.error('SSE连接错误:', error);
+                eventSource.close();
+                statusMessage.textContent = '接收进度更新时出错';
+                statusMessage.className = 'status-message status-error';
+                submitBtn.disabled = false;
+            };
+        }
     </script>
 </body>
 </html> 

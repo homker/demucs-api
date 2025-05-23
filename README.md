@@ -1,11 +1,12 @@
-# Demucs 音频分离系统
+# Demucs 音频分离系统 + 标准MCP服务器
 
-这是一个基于 [Demucs](https://github.com/facebookresearch/demucs) 的音频分离Web应用。该应用提供了一个简单易用的界面，允许用户上传音频文件并将其分离成不同的音轨（人声、鼓、贝斯、其他乐器等）。
+这是一个基于 [Demucs](https://github.com/facebookresearch/demucs) 的音频分离Web应用，现在完全支持标准 **MCP (Model Context Protocol)** 协议。该应用提供了简单易用的Web界面和符合JSON-RPC 2.0规范的MCP服务器，可与Claude Desktop、Cursor等MCP客户端无缝集成。
 
 ![Demucs Audio Separator](docs/screenshot.png)
 
-## 特性
+## ✨ 主要特性
 
+### 🎵 音频分离功能
 - 💻 简洁现代的Web界面
 - 🎵 支持多种音频格式 (MP3, WAV, FLAC, OGG, M4A)
 - 🔊 支持多种分离模型 (htdemucs, htdemucs_ft, htdemucs_6s, mdx, mdx_q)
@@ -15,7 +16,16 @@
 - 📂 输出为单独的音轨文件
 - 🔄 支持拖放上传
 
-## 安装
+### 🔗 标准MCP协议支持
+- ✅ **JSON-RPC 2.0** - 完全符合MCP官方协议规范
+- ✅ **单一端点通信** - 标准`/mcp`端点，便于客户端集成
+- ✅ **工具调用系统** - 支持音频分离、模型查询、状态查询等工具
+- ✅ **资源管理** - 提供API文档和模型信息资源
+- ✅ **SSE流式输出** - 实时进度更新（MCP协议扩展）
+- ✅ **多客户端兼容** - 可与Claude Desktop、Cursor等MCP工具连接
+- 🧪 **内置测试界面** - 完整的MCP功能测试工具
+
+## 🚀 快速开始
 
 ### 前提条件
 
@@ -23,9 +33,9 @@
 - FFmpeg 6.0+
 - Torch
 
-### 快速安装
+### 安装步骤
 
-1. 克隆仓库并安装依赖:
+1. **克隆仓库并安装依赖:**
 
 ```bash
 git clone https://github.com/yourusername/demucs-webapp.git
@@ -33,24 +43,22 @@ cd demucs-webapp
 pip install -r requirements.txt
 ```
 
-2. 设置环境变量:
+2. **设置环境变量:**
 
 ```bash
 cp .env.example .env
 # 根据需要编辑.env文件
 ```
 
-3. 运行应用:
+3. **运行应用:**
 
 ```bash
 python run.py
 ```
 
-应用将在 http://localhost:5001 上运行。
+应用将在 http://localhost:8080 上运行。
 
 ### Docker安装 (推荐)
-
-我们提供了Docker支持，可以简化安装过程:
 
 ```bash
 # 使用docker-compose
@@ -60,204 +68,207 @@ docker-compose up -d
 ./deploy
 ```
 
-详细的部署说明请参见 [部署指南](docs/deployment.md)。
+## 🎯 使用方法
 
-## 使用方法
+### 🌐 Web界面使用
 
-1. 访问Web界面 (默认 http://localhost:5001)
+1. 访问 **http://localhost:8080**
 2. 上传音频文件（支持拖放）
 3. 选择分离模型和需要提取的音轨
 4. 点击"开始分离"按钮
-5. 等待处理完成（可以实时查看进度）
+5. 实时查看处理进度
 6. 下载分离后的音轨
 
-## API文档
+### 🔌 MCP客户端集成
 
-### 获取可用模型
+在任何支持MCP的客户端中配置：
 
 ```
-GET /api/models
+MCP服务器端点: http://localhost:8080/mcp
+协议: JSON-RPC 2.0 over HTTP
+方法: POST
+Content-Type: application/json
 ```
 
-响应示例:
+### 🧪 MCP测试界面
 
+访问 **http://localhost:8080/test/mcp** 进行MCP功能测试：
+
+- 🔍 查看服务器能力和可用工具
+- 🎵 测试音频分离工具调用
+- 📊 监听SSE流式进度更新
+- 📚 获取模型信息和资源
+
+## 📋 MCP协议使用示例
+
+### 初始化连接
 ```json
 {
-  "status": "success",
-  "data": {
-    "models": ["htdemucs", "htdemucs_ft", "htdemucs_6s", "mdx", "mdx_q"]
-  }
-}
-```
-
-### 处理音频文件
-
-```
-POST /api/process
-Content-Type: multipart/form-data
-```
-
-参数:
-- `file`: 音频文件 (必需)
-- `model`: 模型名称 (可选，默认: htdemucs)
-- `stems`: 要提取的音轨，逗号分隔 (可选，默认: vocals,drums,bass,other)
-
-响应示例:
-
-```json
-{
-  "status": "success",
-  "data": {
-    "job_id": "550e8400-e29b-41d4-a716-446655440000",
-    "message": "Audio separation started",
-    "status_url": "/api/status/550e8400-e29b-41d4-a716-446655440000",
-    "progress_url": "/api/progress/550e8400-e29b-41d4-a716-446655440000",
-    "download_url": "/api/download/550e8400-e29b-41d4-a716-446655440000"
-  }
-}
-```
-
-### 获取任务状态
-
-```
-GET /api/status/<job_id>
-```
-
-响应示例:
-
-```json
-{
-  "status": "success",
-  "data": {
-    "job_id": "550e8400-e29b-41d4-a716-446655440000",
-    "progress": 65,
-    "status": "processing",
-    "message": "Separated drums using htdemucs"
-  }
-}
-```
-
-### 获取任务进度（SSE）
-
-```
-GET /api/progress/<job_id>
-```
-
-返回Server-Sent Events流，实时更新处理进度。
-
-### 下载处理结果
-
-```
-GET /api/download/<job_id>
-```
-
-返回分离后的音轨ZIP文件。
-
-### 清理任务文件
-
-```
-DELETE /api/cleanup/<job_id>
-```
-
-响应示例:
-
-```json
-{
-  "status": "success",
-  "data": {
-    "message": "任务文件清理成功"
-  }
-}
-```
-
-### 管理接口：清理所有文件
-
-```
-POST /api/admin/cleanup
-X-Admin-Token: <管理员令牌>
-```
-
-响应示例:
-
-```json
-{
-  "status": "success",
-  "data": {
-    "message": "所有文件清理成功",
-    "tasks_cleared": 5,
-    "stats": {
-      "uploads_deleted": 10,
-      "outputs_deleted": 15,
-      "separated_deleted": 20,
-      "zip_files_deleted": 8
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "1.0",
+    "capabilities": {},
+    "clientInfo": {
+      "name": "your-client-name",
+      "version": "1.0.0"
     }
   }
 }
 ```
 
+### 调用音频分离工具
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "separate_audio",
+    "arguments": {
+      "file_path": "/path/to/audio.mp3",
+      "model": "htdemucs",
+      "stems": ["vocals", "drums"],
+      "stream_progress": true
+    }
+  }
+}
+```
+
+### 监听实时进度
+```
+GET http://localhost:8080/mcp/stream/{job_id}
+Content-Type: text/event-stream
+```
+
+## 🛠️ 可用的MCP工具
+
+| 工具名称 | 描述 | 参数 |
+|---------|------|------|
+| `separate_audio` | 音频分离 | `file_path`, `model`, `stems`, `stream_progress` |
+| `get_models` | 获取可用模型 | 无 |
+| `get_job_status` | 查询任务状态 | `job_id` |
+
+## 📚 可用的MCP资源
+
+| 资源URI | 名称 | 描述 |
+|---------|------|------|
+| `demucs://docs/api` | API文档 | 完整的API使用文档 |
+| `demucs://models/info` | 模型信息 | 详细的模型参数和特性 |
+
 ## 配置参数
 
 可以通过环境变量或`.env`文件配置以下参数：
 
-| 参数 | 说明 | 默认值 |
-|-----|-----|-------|
-| `DEBUG` | 调试模式 | False |
-| `SECRET_KEY` | Flask密钥 | dev-key-12345 |
-| `LOG_LEVEL` | 日志级别 | INFO |
-| `ADMIN_TOKEN` | 管理员令牌 | admin-token-12345 |
-| `UPLOAD_FOLDER` | 上传文件目录 | uploads |
-| `OUTPUT_FOLDER` | 输出文件目录 | outputs |
-| `MAX_CONTENT_LENGTH` | 最大上传文件大小 | 500MB |
-| `FILE_RETENTION_MINUTES` | 文件保留时间 | 60 |
-| `DEFAULT_MODEL` | 默认模型 | htdemucs |
-| `SAMPLE_RATE` | 采样率 | 44100 |
-| `CHANNELS` | 声道数 | 2 |
-| `HOST` | 服务器主机 | 0.0.0.0 |
-| `PORT` | 服务器端口 | 5000 |
+| 参数名 | 默认值 | 说明 |
+|--------|--------|------|
+| `HOST` | 0.0.0.0 | 服务器绑定地址 |
+| `PORT` | 8080 | 服务器端口 |
+| `DEBUG` | False | 调试模式 |
+| `MAX_CONTENT_LENGTH` | 100MB | 最大上传文件大小 |
+| `UPLOAD_FOLDER` | uploads | 上传文件目录 |
+| `OUTPUT_FOLDER` | outputs | 输出文件目录 |
+| `ADMIN_TOKEN` | random | 管理员令牌 |
+| `BASE_URL` | http://localhost:8080 | 基础URL |
 
-## 开发
-
-### 项目结构
+## 目录结构
 
 ```
-demucs-webapp/
-├── app/                    # 应用代码
-│   ├── __init__.py         # 应用初始化
-│   ├── factory.py          # 应用工厂
-│   ├── config.py           # 配置类
-│   ├── routes/             # 路由模块
-│   │   ├── __init__.py
-│   │   ├── api.py          # API路由
-│   │   └── main.py         # 主路由
-│   ├── services/           # 服务层
-│   │   ├── __init__.py
+demucs/
+├── app/                    # 主应用目录
+│   ├── routes/            # 路由模块
+│   │   ├── api.py         # REST API路由
+│   │   ├── mcp.py         # MCP协议路由
+│   │   └── main.py        # 主页路由
+│   ├── services/          # 服务模块
 │   │   ├── audio_separator.py  # 音频分离服务
-│   │   └── file_manager.py     # 文件管理服务
-│   ├── utils/              # 工具函数
-│   │   ├── __init__.py
-│   │   ├── helpers.py      # 辅助函数
-│   │   └── sse.py          # SSE支持
-│   └── templates/          # 模板文件
-│       └── index.html      # 主页模板
-├── uploads/                # 上传文件目录
-├── outputs/                # 输出文件目录
-├── .env                    # 环境变量配置
-├── .env.example            # 环境变量示例
-├── requirements.txt        # 依赖列表
-├── run.py                  # 应用入口
-└── README.md               # 项目说明
+│   │   ├── file_manager.py     # 文件管理服务
+│   │   └── mcp_server.py       # MCP服务实现
+│   ├── templates/         # HTML模板
+│   │   ├── index.html     # 主页
+│   │   └── mcp_test.html  # MCP测试页面
+│   ├── static/            # 静态文件
+│   ├── utils/             # 工具函数
+│   ├── config.py          # 配置管理
+│   └── factory.py         # 应用工厂
+├── test/                   # 测试工具
+│   └── mcp/               # MCP测试工具
+│       ├── client.py      # 客户端测试工具
+│       └── README.md      # 测试文档
+├── docs/                   # 文档
+├── uploads/               # 上传文件目录
+├── outputs/               # 输出文件目录
+├── requirements.txt       # Python依赖
+├── Dockerfile            # Docker配置
+├── docker-compose.yml    # Docker Compose配置
+└── run.py                # 启动脚本
 ```
+
+## 开发说明
+
+### 本地开发
+
+```bash
+# 安装依赖
+pip install -r requirements.txt
+
+# 设置环境变量
+export FLASK_ENV=development
+export DEBUG=True
+
+# 启动应用
+python run.py
+```
+
+### Docker开发
+
+```bash
+# 构建镜像
+docker build -t demucs-webapp .
+
+# 运行容器
+docker run -p 8080:8080 demucs-webapp
+```
+
+## 故障排除
+
+### FFmpeg问题
+
+如果遇到FFmpeg相关错误，请确保安装了正确版本的FFmpeg：
+
+```bash
+# macOS
+brew install ffmpeg
+
+# Ubuntu/Debian
+sudo apt update
+sudo apt install ffmpeg
+
+# 检查版本
+ffmpeg -version
+```
+
+### 内存不足
+
+处理大文件时可能需要更多内存。可以通过以下方式优化：
+
+1. 增加Docker容器内存限制
+2. 使用分块处理
+3. 选择较小的模型
+
+### 权限问题
+
+确保应用有读写上传和输出目录的权限：
+
+```bash
+chmod 755 uploads outputs
+```
+
+## 许可证
+
+MIT License
 
 ## 贡献
 
-欢迎贡献代码、报告问题或提出建议。请随时提交Pull Request或Issue。
-
-## 许可
-
-本项目基于MIT许可证开源 - 详见 [LICENSE](LICENSE) 文件。
-
-## 致谢
-
-- [Demucs](https://github.com/facebookresearch/demucs) - Facebook AI Research开发的音频源分离模型
-- [Flask](https://flask.palletsprojects.com/) - Web框架
-- [PyTorch](https://pytorch.org/) - 深度学习框架 
+欢迎提交Issues和Pull Requests！ 

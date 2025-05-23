@@ -1,20 +1,17 @@
 import os
-import uuid
+import threading
 import logging
-from flask import Blueprint, request, send_file, jsonify, current_app
-from werkzeug.utils import secure_filename
+from flask import Blueprint, request, current_app
 
-from app.utils import (
-    allowed_file, 
-    generate_job_id, 
+from app.utils.helpers import (
     validate_request, 
-    process_boolean_param, 
-    create_error_response, 
+    allowed_file, 
+    generate_job_id,
     create_success_response, 
-    create_file_response, 
-    SSEManager, 
-    create_sse_response
+    create_error_response, 
+    create_file_response
 )
+from app.utils.sse import SSEManager, create_sse_response
 
 logger = logging.getLogger(__name__)
 
@@ -82,64 +79,63 @@ def process_audio():
         # 创建应用上下文副本以在线程中使用
         app = current_app._get_current_object()
         
-        # Start audio separation in a background thread
-        def process_task():
-            with app.app_context():
-                try:
-                    # Define progress callback
-                    def update_progress(progress, message, status=None, result_file=None):
-                        sse_manager.update_progress(job_id, progress, message, status, result_file)
+        # Define progress callback for SSE
+        def progress_callback(progress, message="处理中", status="processing"):
+            # 更新传统SSE进度
+            sse_manager.update_progress(job_id, progress=progress, message=message, status=status)
+        
+        # Start processing thread
+        def process_thread():
+            try:
+                # Start demucs process
+                output_paths = app.audio_separator.separate(
+                    file_path=file_path,
+                    output_dir=job_output_dir,
+                    job_id=job_id,
+                    model_name=model_name,
+                    stems=stems,
+                    progress_callback=progress_callback
+                )
+                
+                if output_paths:
+                    # Create a zip file from the output
+                    zip_path = app.file_manager.create_zip_from_output(job_id, output_paths)
                     
-                    # Run audio separation
-                    result = app.audio_separator.separate_track(
-                        input_file=file_path,
-                        output_dir=job_output_dir,
-                        model_name=model_name,
-                        stems=stems,
-                        progress_callback=update_progress
-                    )
-                    
-                    # Create ZIP of output files
-                    zip_path = app.file_manager.create_zip_from_files(result['files'], job_id)
-                    
-                    # Update task with completion and result file
-                    sse_manager.update_progress(
-                        job_id, 
-                        100, 
-                        "Processing completed", 
-                        "completed",
-                        zip_path
-                    )
+                    # Update progress to 100% when complete
+                    progress_callback(100, "音频分离完成", "completed")
                     
                     logger.info(f"Audio separation completed for job: {job_id}")
-                    
-                except Exception as e:
-                    logger.error(f"Error processing audio: {str(e)}")
-                    # 将错误详细信息写入文件，方便调试
-                    with open("error_details.txt", "w") as f:
-                        import traceback
-                        f.write(f"Error: {str(e)}\n")
-                        f.write(traceback.format_exc())
-                    sse_manager.set_error(job_id, f"Error: {str(e)}")
+                else:
+                    # If no output paths were returned, the separation failed
+                    progress_callback(0, "处理失败", "error")
+                    logger.error(f"Audio separation failed for job: {job_id}")
+            
+            except Exception as e:
+                logger.error(f"Error in audio separation thread: {str(e)}")
+                progress_callback(0, f"错误: {str(e)}", "error")
         
-        # Run in background
-        import threading
-        thread = threading.Thread(target=process_task)
+        # Start processing in a separate thread
+        thread = threading.Thread(target=process_thread)
         thread.daemon = True
         thread.start()
         
-        # Return job ID for status tracking
+        # Construct API URLs
+        base_url = current_app.config.get('BASE_URL', '')
+        status_url = f"/api/status/{job_id}"
+        progress_url = f"/api/progress/{job_id}"
+        download_url = f"/api/download/{job_id}"
+        
         return create_success_response({
             'job_id': job_id,
             'message': 'Audio separation started',
-            'status_url': f"/api/status/{job_id}",
-            'progress_url': f"/api/progress/{job_id}",
-            'download_url': f"/api/download/{job_id}"
+            'status_url': status_url,
+            'progress_url': progress_url,
+            'download_url': download_url
         })
-        
+    
     except Exception as e:
-        logger.error(f"Error starting audio separation: {str(e)}")
-        return create_error_response(f"Failed to start audio separation: {str(e)}")
+        logger.error(f"Error starting separation process: {str(e)}")
+        return create_error_response(f"Failed to start separation process: {str(e)}")
 
 @api_bp.route('/status/<job_id>', methods=['GET'])
 def get_status(job_id):

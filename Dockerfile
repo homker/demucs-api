@@ -38,19 +38,27 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY . .
 
 # 创建工作目录
-RUN mkdir -p uploads outputs
+RUN mkdir -p uploads outputs test/mcp
 
 # 设置环境变量
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8080
 ENV FLASK_ENV=production
+ENV HOST=0.0.0.0
 
 # 验证FFmpeg版本和torchaudio后端
 RUN ffmpeg -version && \
     python -c "import torchaudio; print(f'Available backends: {torchaudio.list_audio_backends()}')" || echo "FFmpeg backend not detected in torchaudio, audio processing may be affected"
 
+# 验证MCP相关依赖
+RUN python -c "import flask_cors; import sseclient; print('MCP dependencies installed successfully')"
+
 # 暴露端口
 EXPOSE 8080
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # 使用gunicorn运行应用
 CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 "run:application" 
