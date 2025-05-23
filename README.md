@@ -46,7 +46,11 @@ pip install -r requirements.txt
 2. **设置环境变量:**
 
 ```bash
-cp .env.example .env
+# 选择适合的配置模板
+cp config/.env.production .env    # 生产环境
+# 或
+cp config/.env.development .env   # 开发环境
+
 # 根据需要编辑.env文件
 ```
 
@@ -61,11 +65,14 @@ python run.py
 ### Docker安装 (推荐)
 
 ```bash
+# 使用快捷构建脚本
+./build.sh docker
+
 # 使用docker-compose
-docker-compose up -d
+cd build && docker-compose up -d
 
 # 或使用部署脚本
-./deploy
+./build.sh deploy
 ```
 
 ## 🎯 使用方法
@@ -157,6 +164,88 @@ Content-Type: text/event-stream
 | `demucs://docs/api` | API文档 | 完整的API使用文档 |
 | `demucs://models/info` | 模型信息 | 详细的模型参数和特性 |
 
+## ⚙️ 构建和部署
+
+### 快捷构建脚本
+
+```bash
+# 查看可用选项
+./build.sh help
+
+# 构建Docker镜像
+./build.sh docker
+
+# 运行部署
+./build.sh deploy
+
+# 清理临时文件
+./build.sh cleanup
+
+# 健康检查
+./build.sh health
+```
+
+### 配置管理
+
+```bash
+# 开发环境
+cp config/.env.development .env
+
+# 生产环境
+cp config/.env.production .env
+
+# 自定义配置
+cp config/.env.example .env
+```
+
+## 📁 项目结构
+
+```
+demucs/
+├── README.md                    # 项目说明
+├── build.sh                     # 构建快捷脚本
+├── .env                         # 配置文件（不提交）
+├── requirements.txt             # Python依赖
+├── run.py                       # 应用启动入口
+│
+├── app/                         # 应用主代码
+│   ├── routes/                 # 路由模块
+│   ├── services/               # 业务逻辑
+│   ├── templates/              # HTML模板
+│   └── static/                 # 静态资源
+│
+├── build/                       # 构建和部署
+│   ├── docker-build.sh        # Docker构建
+│   ├── Dockerfile              # Docker镜像
+│   ├── deploy                  # 部署脚本
+│   └── ...                     # 其他构建工具
+│
+├── config/                      # 配置模板
+│   ├── .env.example           # 配置模板
+│   ├── .env.development       # 开发环境
+│   └── .env.production        # 生产环境
+│
+├── docs/                        # 项目文档
+│   ├── deployment.md          # 部署指南
+│   ├── env_configuration_guide.md # 配置指南
+│   └── ...                     # 其他文档
+│
+├── uploads/                     # 上传文件
+├── outputs/                     # 输出文件
+└── logs/                       # 日志文件
+```
+
+详细的项目结构说明请参考：[docs/project_structure.md](docs/project_structure.md)
+
+## 📖 文档
+
+- 📘 [项目结构说明](docs/project_structure.md)
+- 🚀 [部署指南](docs/deployment.md)  
+- 🔧 [环境配置指南](docs/env_configuration_guide.md)
+- 🐳 [Docker故障排除](docs/docker_troubleshooting.md)
+- 🌐 [子路径部署](docs/subpath_deployment.md)
+- 🔄 [部署更新指南](docs/deployment_update_guide.md)
+
 ## 配置参数
 
 可以通过环境变量或`.env`文件配置以下参数：
@@ -166,109 +255,11 @@ Content-Type: text/event-stream
 | `HOST` | 0.0.0.0 | 服务器绑定地址 |
 | `PORT` | 8080 | 服务器端口 |
 | `DEBUG` | False | 调试模式 |
-| `MAX_CONTENT_LENGTH` | 100MB | 最大上传文件大小 |
+| `BASE_URL` | '' | API基础路径（子路径部署时使用） |
+| `APPLICATION_ROOT` | '' | Flask应用根路径 |
+| `MAX_CONTENT_LENGTH` | 500MB | 最大上传文件大小 |
 | `UPLOAD_FOLDER` | uploads | 上传文件目录 |
 | `OUTPUT_FOLDER` | outputs | 输出文件目录 |
 | `ADMIN_TOKEN` | random | 管理员令牌 |
-| `BASE_URL` | http://localhost:8080 | 基础URL |
 
-## 目录结构
-
-```
-demucs/
-├── app/                    # 主应用目录
-│   ├── routes/            # 路由模块
-│   │   ├── api.py         # REST API路由
-│   │   ├── mcp.py         # MCP协议路由
-│   │   └── main.py        # 主页路由
-│   ├── services/          # 服务模块
-│   │   ├── audio_separator.py  # 音频分离服务
-│   │   ├── file_manager.py     # 文件管理服务
-│   │   └── mcp_server.py       # MCP服务实现
-│   ├── templates/         # HTML模板
-│   │   ├── index.html     # 主页
-│   │   └── mcp_test.html  # MCP测试页面
-│   ├── static/            # 静态文件
-│   ├── utils/             # 工具函数
-│   ├── config.py          # 配置管理
-│   └── factory.py         # 应用工厂
-├── test/                   # 测试工具
-│   └── mcp/               # MCP测试工具
-│       ├── client.py      # 客户端测试工具
-│       └── README.md      # 测试文档
-├── docs/                   # 文档
-├── uploads/               # 上传文件目录
-├── outputs/               # 输出文件目录
-├── requirements.txt       # Python依赖
-├── Dockerfile            # Docker配置
-├── docker-compose.yml    # Docker Compose配置
-└── run.py                # 启动脚本
-```
-
-## 开发说明
-
-### 本地开发
-
-```bash
-# 安装依赖
-pip install -r requirements.txt
-
-# 设置环境变量
-export FLASK_ENV=development
-export DEBUG=True
-
-# 启动应用
-python run.py
-```
-
-### Docker开发
-
-```bash
-# 构建镜像
-docker build -t demucs-webapp .
-
-# 运行容器
-docker run -p 8080:8080 demucs-webapp
-```
-
-## 故障排除
-
-### FFmpeg问题
-
-如果遇到FFmpeg相关错误，请确保安装了正确版本的FFmpeg：
-
-```bash
-# macOS
-brew install ffmpeg
-
-# Ubuntu/Debian
-sudo apt update
-sudo apt install ffmpeg
-
-# 检查版本
-ffmpeg -version
-```
-
-### 内存不足
-
-处理大文件时可能需要更多内存。可以通过以下方式优化：
-
-1. 增加Docker容器内存限制
-2. 使用分块处理
-3. 选择较小的模型
-
-### 权限问题
-
-确保应用有读写上传和输出目录的权限：
-
-```bash
-chmod 755 uploads outputs
-```
-
-## 许可证
-
-MIT License
-
-## 贡献
-
-欢迎提交Issues和Pull Requests！ 
+详细配置说明请参考：[docs/env_configuration_guide.md](docs/env_configuration_guide.md) 

@@ -14,6 +14,30 @@ def index():
     base_url = current_app.config.get('BASE_URL', '')
     return render_template('index.html', base_url=base_url)
 
+@main_bp.route('/mcp')
+def mcp_page():
+    """MCP协议说明页面"""
+    base_url = current_app.config.get('BASE_URL', '')
+    return render_template('mcp.html', base_url=base_url)
+
+@main_bp.route('/api-docs')
+def api_docs_page():
+    """API文档页面"""
+    base_url = current_app.config.get('BASE_URL', '')
+    return render_template('api.html', base_url=base_url)
+
+@main_bp.route('/docs')
+def docs_page():
+    """使用指南页面"""
+    base_url = current_app.config.get('BASE_URL', '')
+    return render_template('docs.html', base_url=base_url)
+
+@main_bp.route('/test-guide')
+def test_guide_page():
+    """测试指南页面"""
+    base_url = current_app.config.get('BASE_URL', '')
+    return render_template('test.html', base_url=base_url)
+
 @main_bp.route('/health')
 def health():
     """Health check endpoint"""

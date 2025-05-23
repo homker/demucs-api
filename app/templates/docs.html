@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>使用指南 - Demucs 音频分离工具</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>📖 使用指南</h1>
+            <p>详细的使用说明和最佳实践，帮助您获得最佳的音频分离效果</p>
+            <div class="main-nav">
+                <a href="/" class="nav-link">🏠 首页</a>
+                <a href="/mcp" class="nav-link">🔗 MCP协议</a>
+                <a href="/api-docs" class="nav-link">📚 API文档</a>
+                <a href="/docs" class="nav-link active">📖 使用指南</a>
+                <a href="/test-guide" class="nav-link">🧪 测试指南</a>
+                <a href="/admin" class="nav-link">🛠️ 管理面板</a>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container container-sm">
+        <!-- 目录 -->
+        <div class="card" style="background: #f8f9fa;">
+            <h3>📋 目录</h3>
+            <ul style="list-style: none; padding-left: 0;">
+                <li style="margin: 8px 0;"><a href="#quick-start" class="text-primary">🚀 快速开始</a></li>
+                <li style="margin: 8px 0;"><a href="#models" class="text-primary">🎯 模型选择指南</a></li>
+                <li style="margin: 8px 0;"><a href="#quality" class="text-primary">🎵 音质设置</a></li>
+                <li style="margin: 8px 0;"><a href="#formats" class="text-primary">📁 输出格式</a></li>
+                <li style="margin: 8px 0;"><a href="#stems" class="text-primary">🎼 音轨类型</a></li>
+                <li style="margin: 8px 0;"><a href="#advanced" class="text-primary">⚙️ 高级使用</a></li>
+                <li style="margin: 8px 0;"><a href="#troubleshooting" class="text-primary">🔧 故障排除</a></li>
+                <li style="margin: 8px 0;"><a href="#tips" class="text-primary">💡 最佳实践</a></li>
+            </ul>
+        </div>
+
+        <!-- 快速开始 -->
+        <div class="card" id="quick-start">
+            <h2>🚀 快速开始</h2>
+            <p>三个简单步骤即可开始使用：</p>
+            
+            <div class="steps">
+                <div class="step active">
+                    <div class="step-number">1</div>
+                    <div class="step-title">选择音频文件</div>
+                    <div class="step-connector"></div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-title">配置参数</div>
+                    <div class="step-connector"></div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-title">下载结果</div>
+                </div>
+            </div>
+            
+            <ol>
+                <li><strong>上传音频文件</strong>：支持MP3、WAV、FLAC等常见格式，建议文件大小不超过100MB</li>
+                <li><strong>选择处理参数</strong>：根据需要选择分离模型、音轨类型、输出格式和音质</li>
+                <li><strong>开始处理</strong>：点击"开始分离"，系统会实时显示处理进度</li>
+                <li><strong>下载结果</strong>：处理完成后，下载ZIP压缩包，其中包含所有分离的音轨</li>
+            </ol>
+
+            <div class="tip">
+                <strong>💡 新手建议：</strong> 初次使用建议选择默认的 <code>htdemucs</code> 模型和 <code>high</code> 质量设置，
+                可以获得质量和速度的最佳平衡。
+            </div>
+        </div>
+
+        <!-- 模型选择指南 -->
+        <div class="card" id="models">
+            <h2>🎯 模型选择指南</h2>
+            <p>不同的模型适用于不同的应用场景，选择合适的模型可以显著提升分离效果：</p>
+            
+            <div class="grid">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h5>htdemucs <span class="badge">推荐</span></h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>特点：</strong> 平衡质量和速度的最佳选择</p>
+                        <p><strong>适用：</strong> 流行音乐、摇滚、电子音乐</p>
+                        <p><strong>处理时间：</strong> 中等</p>
+                        <p><strong>输出质量：</strong> 高</p>
+                    </div>
+                </div>
+
+                <div class="card card-success">
+                    <div class="card-header">
+                        <h5>htdemucs_ft <span class="badge">高质量</span></h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>特点：</strong> 微调版本，质量最佳</p>
+                        <p><strong>适用：</strong> 专业制作、高质量要求</p>
+                        <p><strong>处理时间：</strong> 较长</p>
+                        <p><strong>输出质量：</strong> 最高</p>
+                    </div>
+                </div>
+
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h5>htdemucs_6s <span class="badge">特殊</span></h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>特点：</strong> 支持6音轨分离</p>
+                        <p><strong>适用：</strong> 包含钢琴和吉他的音乐</p>
+                        <p><strong>处理时间：</strong> 较长</p>
+                        <p><strong>输出质量：</strong> 高（6轨）</p>
+                    </div>
+                </div>
+
+                <div class="card card-warning">
+                    <div class="card-header">
+                        <h5>mdx <span class="badge">平衡</span></h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>特点：</strong> 平衡型，适用性广</p>
+                        <p><strong>适用：</strong> 各类音乐风格</p>
+                        <p><strong>处理时间：</strong> 中等</p>
+                        <p><strong>输出质量：</strong> 中高</p>
+                    </div>
+                </div>
+
+                <div class="card card-secondary">
+                    <div class="card-header">
+                        <h5>mdx_q <span class="badge">快速</span></h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>特点：</strong> 快速处理版本</p>
+                        <p><strong>适用：</strong> 快速预览、测试用途</p>
+                        <p><strong>处理时间：</strong> 最短</p>
+                        <p><strong>输出质量：</strong> 中等</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h4>🎯 选择建议</h4>
+                <ul>
+                    <li><strong>日常使用</strong>：htdemucs（默认）</li>
+                    <li><strong>专业制作</strong>：htdemucs_ft</li>
+                    <li><strong>有钢琴/吉他</strong>：htdemucs_6s</li>
+                    <li><strong>快速预览</strong>：mdx_q</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 音质设置 -->
+        <div class="card" id="quality">
+            <h2>🎵 音质设置</h2>
+            <p>根据用途选择合适的音质设置，平衡音质、文件大小和处理时间：</p>
+            
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>质量等级</th>
+                        <th>比特率</th>
+                        <th>采样率</th>
+                        <th>文件大小</th>
+                        <th>适用场景</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>lossless</strong> <span class="badge new">无损</span></td>
+                        <td>N/A</td>
+                        <td>44kHz</td>
+                        <td>最大</td>
+                        <td>专业制作、母带处理</td>
+                    </tr>
+                    <tr class="table-hover">
+                        <td><strong>high</strong> <span class="badge">推荐</span></td>
+                        <td>320kbps</td>
+                        <td>44kHz</td>
+                        <td>较大</td>
+                        <td>日常使用、高质量需求</td>
+                    </tr>
+                    <tr>
+                        <td><strong>medium</strong></td>
+                        <td>192kbps</td>
+                        <td>44kHz</td>
+                        <td>中等</td>
+                        <td>移动设备、网络分享</td>
+                    </tr>
+                    <tr>
+                        <td><strong>low</strong></td>
+                        <td>128kbps</td>
+                        <td>22kHz</td>
+                        <td>最小</td>
+                        <td>快速预览、测试用途</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning-box">
+                <h4>⚠️ 重要提醒</h4>
+                <p>音质设置只对MP3格式有效。WAV和FLAC格式会自动使用最佳质量设置。</p>
+            </div>
+        </div>
+
+        <!-- 输出格式 -->
+        <div class="card" id="formats">
+            <h2>📁 输出格式选择</h2>
+            <p>根据用途选择最适合的输出格式：</p>
+            
+            <div class="grid grid-3">
+                <div class="card" style="border-left: 4px solid var(--primary-color);">
+                    <h4>WAV <span class="badge">无损</span></h4>
+                    <p><strong>优点：</strong></p>
+                    <ul>
+                        <li>完全无损音质</li>
+                        <li>兼容性最好</li>
+                        <li>适合进一步编辑</li>
+                    </ul>
+                    <p><strong>缺点：</strong></p>
+                    <ul>
+                        <li>文件体积大</li>
+                        <li>不支持元数据</li>
+                    </ul>
+                    <p><strong>适用：</strong> 专业制作、音频编辑</p>
+                </div>
+
+                <div class="card" style="border-left: 4px solid var(--success-color);">
+                    <h4>MP3 <span class="badge">通用</span></h4>
+                    <p><strong>优点：</strong></p>
+                    <ul>
+                        <li>文件体积小</li>
+                        <li>兼容性极佳</li>
+                        <li>支持元数据</li>
+                    </ul>
+                    <p><strong>缺点：</strong></p>
+                    <ul>
+                        <li>有损压缩</li>
+                        <li>不适合多次编辑</li>
+                    </ul>
+                    <p><strong>适用：</strong> 日常使用、网络分享</p>
+                </div>
+
+                <div class="card" style="border-left: 4px solid var(--warning-color);">
+                    <h4>FLAC <span class="badge">平衡</span></h4>
+                    <p><strong>优点：</strong></p>
+                    <ul>
+                        <li>无损压缩</li>
+                        <li>文件相对较小</li>
+                        <li>支持元数据</li>
+                    </ul>
+                    <p><strong>缺点：</strong></p>
+                    <ul>
+                        <li>兼容性一般</li>
+                        <li>处理时间稍长</li>
+                    </ul>
+                    <p><strong>适用：</strong> 高品质收藏、存档</p>
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <h4>🎯 格式选择建议</h4>
+                <ul>
+                    <li><strong>专业用途</strong>：选择WAV，获得最佳质量</li>
+                    <li><strong>日常使用</strong>：选择MP3 + high质量，平衡质量和大小</li>
+                    <li><strong>高品质收藏</strong>：选择FLAC，无损且文件较小</li>
+                    <li><strong>快速分享</strong>：选择MP3 + medium质量</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 音轨类型 -->
+        <div class="card" id="stems">
+            <h2>🎼 音轨类型说明</h2>
+            <p>了解不同音轨的内容，选择您需要的分离结果：</p>
+            
+            <div class="grid">
+                <div class="card" style="background: #fff3e0;">
+                    <h4>🎤 Vocals (人声)</h4>
+                    <p>包含主唱、和声、说唱等所有人声内容</p>
+                    <p><strong>适用：</strong> 卡拉OK制作、人声分析、翻唱</p>
+                </div>
+
+                <div class="card" style="background: #e8f5e8;">
+                    <h4>🥁 Drums (鼓点)</h4>
+                    <p>包含踢鼓、军鼓、嗵鼓、镲片等打击乐器</p>
+                    <p><strong>适用：</strong> 节拍分析、鼓点替换、混音</p>
+                </div>
+
+                <div class="card" style="background: #e3f2fd;">
+                    <h4>🎸 Bass (贝斯)</h4>
+                    <p>包含电贝斯、低音提琴等低频乐器</p>
+                    <p><strong>适用：</strong> 低频分析、贝斯线学习</p>
+                </div>
+
+                <div class="card" style="background: #f3e5f5;">
+                    <h4>🎹 Other (其他)</h4>
+                    <p>包含吉他、键盘、弦乐等其他乐器</p>
+                    <p><strong>适用：</strong> 伴奏制作、乐器学习</p>
+                </div>
+
+                <div class="card" style="background: #fce4ec;">
+                    <h4>🎹 Piano (钢琴)</h4>
+                    <p>专门分离的钢琴音轨（仅htdemucs_6s支持）</p>
+                    <p><strong>适用：</strong> 钢琴学习、古典音乐分析</p>
+                </div>
+
+                <div class="card" style="background: #f1f8e9;">
+                    <h4>🎸 Guitar (吉他)</h4>
+                    <p>专门分离的吉他音轨（仅htdemucs_6s支持）</p>
+                    <p><strong>适用：</strong> 吉他学习、摇滚音乐分析</p>
+                </div>
+            </div>
+
+            <div class="tip">
+                <strong>💡 选择建议：</strong> 可以同时选择多个音轨类型。如果不确定需要哪些，
+                建议选择全部基础音轨（人声、鼓点、贝斯、其他），然后根据需要使用特定音轨。
+            </div>
+        </div>
+
+        <!-- 高级使用 -->
+        <div class="card" id="advanced">
+            <h2>⚙️ 高级使用技巧</h2>
+            
+            <h3>批量处理</h3>
+            <p>通过API接口可以实现批量音频处理：</p>
+            <pre><code># Python批量处理示例
+import requests
+import os
+
+def batch_process(file_list, model='htdemucs'):
+    results = []
+    for file_path in file_list:
+        with open(file_path, 'rb') as f:
+            files = {'file': f}
+            data = {'model': model, 'stems': 'vocals,drums'}
+            response = requests.post('http://localhost:8080/api/process', 
+                                   files=files, data=data)
+            if response.status_code == 200:
+                results.append(response.json()['data']['job_id'])
+    return results</code></pre>
+
+            <h3>自定义音质配置</h3>
+            <p>针对不同用途优化音质设置：</p>
+            <ul>
+                <li><strong>广播电台</strong>：MP3 + medium质量（节省带宽）</li>
+                <li><strong>音乐制作</strong>：WAV + lossless质量（最佳质量）</li>
+                <li><strong>移动应用</strong>：MP3 + low质量（节省存储）</li>
+                <li><strong>在线试听</strong>：MP3 + high质量（平衡质量和加载速度）</li>
+            </ul>
+
+            <h3>实时进度监控</h3>
+            <p>使用SSE接口监控处理进度：</p>
+            <pre><code># JavaScript SSE监控示例
+const eventSource = new EventSource('/api/progress/' + jobId);
+eventSource.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    console.log(`进度: ${data.progress}%`);
+    if (data.status === 'completed') {
+        eventSource.close();
+        downloadResult(jobId);
+    }
+};</code></pre>
+        </div>
+
+        <!-- 故障排除 -->
+        <div class="card" id="troubleshooting">
+            <h2>🔧 故障排除</h2>
+            
+            <h3>常见问题</h3>
+            <div class="card" style="background: #f8f9fa;">
+                <h4>❓ 上传失败</h4>
+                <p><strong>可能原因：</strong></p>
+                <ul>
+                    <li>文件格式不支持（支持：MP3、WAV、FLAC、OGG、M4A）</li>
+                    <li>文件过大（限制：100MB）</li>
+                    <li>网络连接问题</li>
+                </ul>
+                <p><strong>解决方案：</strong></p>
+                <ul>
+                    <li>检查文件格式和大小</li>
+                    <li>尝试压缩音频文件</li>
+                    <li>检查网络连接</li>
+                </ul>
+            </div>
+
+            <div class="card" style="background: #f8f9fa;">
+                <h4>❓ 处理速度慢</h4>
+                <p><strong>影响因素：</strong></p>
+                <ul>
+                    <li>文件大小和长度</li>
+                    <li>选择的模型（htdemucs_ft最慢，mdx_q最快）</li>
+                    <li>服务器负载</li>
+                </ul>
+                <p><strong>优化建议：</strong></p>
+                <ul>
+                    <li>选择较快的模型（mdx_q）</li>
+                    <li>处理较短的音频片段</li>
+                    <li>避免高峰时段</li>
+                </ul>
+            </div>
+
+            <div class="card" style="background: #f8f9fa;">
+                <h4>❓ 分离质量不佳</h4>
+                <p><strong>可能原因：</strong></p>
+                <ul>
+                    <li>源音频质量较低</li>
+                    <li>音乐风格与模型不匹配</li>
+                    <li>输出质量设置过低</li>
+                </ul>
+                <p><strong>改进方法：</strong></p>
+                <ul>
+                    <li>使用高质量源文件</li>
+                    <li>尝试不同模型</li>
+                    <li>提高输出质量设置</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 最佳实践 -->
+        <div class="card" id="tips">
+            <h2>💡 最佳实践</h2>
+            
+            <div class="grid">
+                <div class="highlight-box">
+                    <h4>🎯 源文件选择</h4>
+                    <ul>
+                        <li>使用尽可能高质量的源文件</li>
+                        <li>避免已经过度压缩的音频</li>
+                        <li>选择立体声录音</li>
+                        <li>文件采样率不低于44.1kHz</li>
+                    </ul>
+                </div>
+
+                <div class="info-box">
+                    <h4>⚙️ 参数配置</h4>
+                    <ul>
+                        <li>首次使用建议用默认设置</li>
+                        <li>根据音乐风格选择合适模型</li>
+                        <li>只选择需要的音轨类型</li>
+                        <li>考虑用途选择输出格式</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <h4>📁 文件管理</h4>
+                    <ul>
+                        <li>及时下载处理结果</li>
+                        <li>定期清理临时文件</li>
+                        <li>为文件使用有意义的命名</li>
+                        <li>备份重要的分离结果</li>
+                    </ul>
+                </div>
+
+                <div class="tip">
+                    <h4>🚀 性能优化</h4>
+                    <ul>
+                        <li>避免同时处理多个大文件</li>
+                        <li>在网络良好时进行上传</li>
+                        <li>关闭其他占用资源的应用</li>
+                        <li>定期清理浏览器缓存</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 技术支持 -->
+        <div class="card">
+            <h2>📞 技术支持</h2>
+            <p>如果您在使用过程中遇到问题，可以：</p>
+            <ul>
+                <li>查看 <a href="/test-guide" class="text-primary">测试指南</a> 了解更多测试方法</li>
+                <li>使用 <a href="/test/mcp" class="text-primary">MCP测试页面</a> 验证功能</li>
+                <li>查阅 <a href="/api-docs" class="text-primary">API文档</a> 了解接口详情</li>
+                <li>检查服务器日志排查问题</li>
+            </ul>
+            
+            <div class="info-box">
+                <h4>🔍 调试建议</h4>
+                <p>遇到问题时，请记录以下信息：</p>
+                <ul>
+                    <li>音频文件的格式、大小、时长</li>
+                    <li>选择的模型和参数设置</li>
+                    <li>错误信息或异常行为描述</li>
+                    <li>浏览器控制台的错误信息</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Demucs音频分离工具 &copy; 2024 | 基于<a href="https://github.com/facebookresearch/demucs" style="color: white; text-decoration: underline;">Demucs</a>开发</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript文件 -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html> 

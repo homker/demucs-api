@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API文档 - Demucs 音频分离工具</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>📚 API接口文档</h1>
+            <p>完整的REST API使用指南，支持编程方式集成音频分离功能</p>
+            <div class="main-nav">
+                <a href="/" class="nav-link">🏠 首页</a>
+                <a href="/mcp" class="nav-link">🔗 MCP协议</a>
+                <a href="/api-docs" class="nav-link active">📚 API文档</a>
+                <a href="/docs" class="nav-link">📖 使用指南</a>
+                <a href="/test-guide" class="nav-link">🧪 测试指南</a>
+                <a href="/admin" class="nav-link">🛠️ 管理面板</a>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container container-sm">
+        <!-- API目录 -->
+        <div class="card" style="background: #f8f9fa;">
+            <h3>📋 API接口目录</h3>
+            <ul style="list-style: none; padding-left: 0;">
+                <li style="margin: 8px 0;"><a href="#api-overview" style="color: var(--primary-color); text-decoration: none;">📖 接口概述</a></li>
+                <li style="margin: 8px 0;"><a href="#api-models" style="color: var(--primary-color); text-decoration: none;">1. 获取可用模型</a></li>
+                <li style="margin: 8px 0;"><a href="#api-formats" style="color: var(--primary-color); text-decoration: none;">2. 获取支持的输出格式 <span class="badge" style="background: #28a745; color: white;">新功能</span></a></li>
+                <li style="margin: 8px 0;"><a href="#api-qualities" style="color: var(--primary-color); text-decoration: none;">3. 获取音频质量选项 <span class="badge" style="background: #28a745; color: white;">新功能</span></a></li>
+                <li style="margin: 8px 0;"><a href="#api-process" style="color: var(--primary-color); text-decoration: none;">4. 提交音频处理任务 <span class="badge" style="background: #ffc107; color: #000;">已升级</span></a></li>
+                <li style="margin: 8px 0;"><a href="#api-status" style="color: var(--primary-color); text-decoration: none;">5. 获取任务状态</a></li>
+                <li style="margin: 8px 0;"><a href="#api-progress" style="color: var(--primary-color); text-decoration: none;">6. 实时进度更新</a></li>
+                <li style="margin: 8px 0;"><a href="#api-download" style="color: var(--primary-color); text-decoration: none;">7. 下载处理结果</a></li>
+                <li style="margin: 8px 0;"><a href="#api-cleanup" style="color: var(--primary-color); text-decoration: none;">8. 清理任务文件</a></li>
+                <li style="margin: 8px 0;"><a href="#api-flow" style="color: var(--primary-color); text-decoration: none;">🔄 接口调用流程</a></li>
+            </ul>
+        </div>
+
+        <!-- 接口概述 -->
+        <div class="card" id="api-overview">
+            <h2>📖 接口概述</h2>
+            <p>本应用提供REST API接口，支持通过编程方式使用音频分离功能。以下是可用的API端点及其用法。</p>
+            
+            <div class="tip">
+                <strong>开发者指南：</strong> 以下API接口可用于集成Demucs音频分离功能到您自己的应用程序中。
+                处理过程是异步的，提交任务后您会获得一个任务ID，可以用它来获取进度更新和最终下载分离结果。
+                所有响应都采用统一的JSON格式，包含<code>status</code>和<code>data</code>两个主要字段。
+            </div>
+        </div>
+
+        <!-- 1. 获取可用模型 -->
+        <div class="card" id="api-models">
+            <h3>1. 获取可用模型</h3>
+            <p><strong>端点:</strong> <code>GET /api/models</code></p>
+            <p><strong>描述:</strong> 返回系统中可用的所有音频分离模型列表</p>
+            <p><strong>示例响应:</strong></p>
+            <pre>{
+  "status": "success",
+  "data": {
+    "models": ["htdemucs", "htdemucs_ft", "htdemucs_6s", "mdx", "mdx_q"],
+    "default": "htdemucs"
+  }
+}</pre>
+            <p><strong>使用示例 (cURL):</strong></p>
+            <pre>curl -X GET http://localhost:8080/api/models</pre>
+        </div>
+
+        <!-- 2. 获取支持的输出格式 -->
+        <div class="card" id="api-formats">
+            <h3>2. 获取支持的输出格式 <span class="badge new">新功能</span></h3>
+            <p><strong>端点:</strong> <code>GET /api/formats</code></p>
+            <p><strong>描述:</strong> 返回支持的音频输出格式列表</p>
+            <p><strong>示例响应:</strong></p>
+            <pre>{
+  "status": "success",
+  "data": {
+    "formats": ["wav", "mp3", "flac"],
+    "default": "wav"
+  }
+}</pre>
+            <p><strong>使用示例 (cURL):</strong></p>
+            <pre>curl -X GET http://localhost:8080/api/formats</pre>
+        </div>
+
+        <!-- 3. 获取音频质量选项 -->
+        <div class="card" id="api-qualities">
+            <h3>3. 获取音频质量选项 <span class="badge new">新功能</span></h3>
+            <p><strong>端点:</strong> <code>GET /api/qualities</code></p>
+            <p><strong>描述:</strong> 返回可用的音频质量选项及其描述</p>
+            <p><strong>示例响应:</strong></p>
+            <pre>{
+  "status": "success",
+  "data": {
+    "qualities": {
+      "low": "低质量 (128kbps, 22kHz)",
+      "medium": "中等质量 (192kbps, 44kHz)", 
+      "high": "高质量 (320kbps, 44kHz)",
+      "lossless": "无损质量 (WAV/FLAC, 44kHz)"
+    },
+    "default": "high"
+  }
+}</pre>
+            <p><strong>使用示例 (cURL):</strong></p>
+            <pre>curl -X GET http://localhost:8080/api/qualities</pre>
+        </div>
+
+        <!-- 4. 提交音频处理任务 -->
+        <div class="card" id="api-process">
+            <h3>4. 提交音频处理任务 <span class="badge updated">已升级</span></h3>
+            <p><strong>端点:</strong> <code>POST /api/process</code></p>
+            <p><strong>描述:</strong> 上传音频文件并开始分离处理，支持自定义输出格式和质量</p>
+            <p><strong>请求参数:</strong></p>
+            <ul>
+                <li><code>file</code> - 要处理的音频文件 (必需，multipart/form-data)</li>
+                <li><code>model</code> - 要使用的模型名称 (可选，默认: htdemucs)</li>
+                <li><code>stems</code> - 要分离的音轨，逗号分隔 (可选，默认: 全部音轨)</li>
+                <li><code>output_format</code> - 输出音频格式 (可选，默认: wav) <span class="badge new">新参数</span></li>
+                <li><code>audio_quality</code> - 音频质量 (可选，默认: high) <span class="badge new">新参数</span></li>
+            </ul>
+            
+            <div class="highlight-box">
+                <h4>🎯 格式和质量选择指南</h4>
+                <p><strong>格式选择:</strong></p>
+                <ul style="margin-bottom: 10px;">
+                    <li><strong>WAV</strong>: 无损格式，音质最佳，文件较大</li>
+                    <li><strong>MP3</strong>: 有损压缩，文件小，适合一般使用</li>
+                    <li><strong>FLAC</strong>: 无损压缩，音质佳，文件适中</li>
+                </ul>
+                <p><strong>质量选择:</strong></p>
+                <ul>
+                    <li><strong>lossless</strong>: 专业制作，完全无损</li>
+                    <li><strong>high</strong>: 日常使用最佳平衡</li>
+                    <li><strong>medium</strong>: 移动设备优化</li>
+                    <li><strong>low</strong>: 快速预览，最小文件</li>
+                </ul>
+            </div>
+            
+            <p><strong>示例响应:</strong></p>
+            <pre>{
+  "status": "success",
+  "data": {
+    "job_id": "85f3da9c-7214-4892-b7bd-1e6e498c5d7b",
+    "message": "Audio separation started",
+    "status_url": "/api/status/85f3da9c-7214-4892-b7bd-1e6e498c5d7b",
+    "progress_url": "/api/progress/85f3da9c-7214-4892-b7bd-1e6e498c5d7b",
+    "download_url": "/api/download/85f3da9c-7214-4892-b7bd-1e6e498c5d7b"
+  }
+}</pre>
+            
+            <p><strong>使用示例 (cURL) - 基础调用:</strong></p>
+            <pre>curl -X POST \
+  http://localhost:8080/api/process \
+  -F "file=@song.mp3" \
+  -F "model=htdemucs" \
+  -F "stems=vocals,drums"</pre>
+            
+            <p><strong>使用示例 (cURL) - 带格式和质量参数:</strong></p>
+            <pre>curl -X POST \
+  http://localhost:8080/api/process \
+  -F "file=@song.mp3" \
+  -F "model=htdemucs" \
+  -F "stems=vocals,drums" \
+  -F "output_format=mp3" \
+  -F "audio_quality=high"</pre>
+            
+            <p><strong>使用示例 (JavaScript) - 完整功能:</strong></p>
+            <pre>const formData = new FormData();
+formData.append('file', audioFile); // File对象
+formData.append('model', 'htdemucs');
+formData.append('stems', 'vocals,drums');
+formData.append('output_format', 'mp3'); // 新增格式参数
+formData.append('audio_quality', 'high'); // 新增质量参数
+
+// 使用BASE_URL作为API前缀
+const BASE_URL = "{{ base_url }}" || window.location.origin;
+fetch(`${BASE_URL}/api/process`, {
+  method: 'POST',
+  body: formData
+})
+.then(response => response.json())
+.then(data => {
+  if (data.status === 'success') {
+    console.log('任务创建成功:', data.data.job_id);
+    // 开始监控进度
+    monitorProgress(data.data.job_id);
+  } else {
+    console.error('任务创建失败:', data.message);
+  }
+});</pre>
+        </div>
+
+        <!-- 5. 获取任务状态 -->
+        <div class="card" id="api-status">
+            <h3>5. 获取任务状态</h3>
+            <p><strong>端点:</strong> <code>GET /api/status/{job_id}</code></p>
+            <p><strong>描述:</strong> 获取指定任务的当前状态和进度</p>
+            <p><strong>示例响应:</strong></p>
+            <pre>{
+  "status": "success",
+  "data": {
+    "job_id": "85f3da9c-7214-4892-b7bd-1e6e498c5d7b",
+    "progress": 65,
+    "message": "正在处理音频...",
+    "status": "processing"
+  }
+}</pre>
+            <p><strong>使用示例 (cURL):</strong></p>
+            <pre>curl -X GET http://localhost:8080/api/status/85f3da9c-7214-4892-b7bd-1e6e498c5d7b</pre>
+        </div>
+
+        <!-- 6. 实时进度更新 -->
+        <div class="card" id="api-progress">
+            <h3>6. 实时进度更新</h3>
+            <p><strong>端点:</strong> <code>GET /api/progress/{job_id}</code></p>
+            <p><strong>描述:</strong> 通过Server-Sent Events (SSE)接收实时进度更新</p>
+            <p><strong>返回:</strong> text/event-stream 格式的数据流</p>
+            <p><strong>使用示例 (JavaScript):</strong></p>
+            <pre>// 获取基础URL路径
+const BASE_URL = "{{ base_url }}" || window.location.origin;
+const eventSource = new EventSource(`${BASE_URL}/api/progress/85f3da9c-7214-4892-b7bd-1e6e498c5d7b`);
+
+eventSource.onmessage = (event) => {
+  const progress = JSON.parse(event.data);
+  console.log(`进度: ${progress.progress}%, 消息: ${progress.message}`);
+  
+  // 当任务完成或出错时关闭连接
+  if (progress.status === 'completed' || progress.status === 'error') {
+    eventSource.close();
+  }
+};</pre>
+        </div>
+
+        <!-- 7. 下载处理结果 -->
+        <div class="card" id="api-download">
+            <h3>7. 下载处理结果</h3>
+            <p><strong>端点:</strong> <code>GET /api/download/{job_id}</code></p>
+            <p><strong>描述:</strong> 下载已完成任务的分离音轨（ZIP格式）</p>
+            <p><strong>返回:</strong> application/zip 文件</p>
+            <p><strong>使用示例 (cURL):</strong></p>
+            <pre>curl -X GET \
+  http://localhost:8080/api/download/85f3da9c-7214-4892-b7bd-1e6e498c5d7b \
+  --output separated_tracks.zip</pre>
+            <p><strong>使用示例 (JavaScript):</strong></p>
+            <pre>// 示例: 下载处理结果
+const downloadResult = (jobId) => {
+  const BASE_URL = "{{ base_url }}" || window.location.origin;
+  window.location.href = `${BASE_URL}/api/download/${jobId}`;
+  
+  // 或者使用fetch并保存文件
+  fetch(`${BASE_URL}/api/download/${jobId}`)
+    .then(response => response.blob())
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'separated_tracks.zip';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    });
+};</pre>
+        </div>
+
+        <!-- 8. 清理任务文件 -->
+        <div class="card" id="api-cleanup">
+            <h3>8. 清理任务文件</h3>
+            <p><strong>端点:</strong> <code>DELETE /api/cleanup/{job_id}</code></p>
+            <p><strong>描述:</strong> 清理指定任务的相关文件，释放服务器存储空间</p>
+            <p><strong>示例响应:</strong></p>
+            <pre>{
+  "status": "success",
+  "data": {
+    "message": "任务文件已成功清理"
+  }
+}</pre>
+            <p><strong>使用示例 (cURL):</strong></p>
+            <pre>curl -X DELETE http://localhost:8080/api/cleanup/85f3da9c-7214-4892-b7bd-1e6e498c5d7b</pre>
+        </div>
+
+        <div class="tip">
+            <strong>注意:</strong> 所有API请求返回的HTTP状态码为200（成功）或4xx/5xx（错误）。响应体中的status字段会指示具体操作是成功还是失败。系统会在一定时间后（默认1小时）自动清理未被下载的文件。
+        </div>
+
+        <!-- API接口调用流程 -->
+        <div class="card" id="api-flow">
+            <h2>🔄 API接口调用流程</h2>
+            <h3>典型使用流程</h3>
+            <p>以下是音频分离处理的完整流程和API调用顺序：</p>
+            
+            <ol>
+                <li>
+                    <strong>获取可用选项</strong> (可选但推荐) <span class="badge updated">已升级</span>
+                    <p>在开始处理之前，您可以获取系统支持的各种选项:</p>
+                    <ul>
+                        <li>调用 <code>GET /api/models</code> 获取可用的模型列表</li>
+                        <li>调用 <code>GET /api/formats</code> 获取支持的输出格式 <span class="badge new">新增</span></li>
+                        <li>调用 <code>GET /api/qualities</code> 获取音频质量选项 <span class="badge new">新增</span></li>
+                    </ul>
+                    <pre>// 示例: 获取所有选项用于构建UI
+const loadOptions = async () => {
+  const BASE_URL = "{{ base_url }}" || window.location.origin;
+  
+  try {
+    // 并行获取所有选项
+    const [modelsRes, formatsRes, qualitiesRes] = await Promise.all([
+      fetch(`${BASE_URL}/api/models`),
+      fetch(`${BASE_URL}/api/formats`),
+      fetch(`${BASE_URL}/api/qualities`)
+    ]);
+    
+    const models = await modelsRes.json();
+    const formats = await formatsRes.json();
+    const qualities = await qualitiesRes.json();
+    
+    console.log('可用模型:', models.data.models);
+    console.log('支持格式:', formats.data.formats);
+    console.log('质量选项:', qualities.data.qualities);
+    
+    // 用于构建选择界面
+    buildUI(models.data, formats.data, qualities.data);
+    
+  } catch (error) {
+    console.error('获取选项失败:', error);
+  }
+};</pre>
+                </li>
+                <li>
+                    <strong>提交音频处理任务</strong> (必需) <span class="badge updated">已升级</span>
+                    <p>调用 <code>POST /api/process</code> 上传音频文件并获取任务ID，现在支持格式和质量控制。</p>
+                    <pre>// 示例: 提交处理任务（完整功能版）
+const submitAudioTask = async (audioFile, options = {}) => {
+  const BASE_URL = "{{ base_url }}" || window.location.origin;
+  
+  const formData = new FormData();
+  formData.append('file', audioFile);
+  
+  // 基础参数
+  formData.append('model', options.model || 'htdemucs');
+  formData.append('stems', options.stems || 'vocals,drums,bass,other');
+  
+  // 新增的格式和质量参数
+  formData.append('output_format', options.output_format || 'mp3');
+  formData.append('audio_quality', options.audio_quality || 'high');
+  
+  try {
+    const response = await fetch(`${BASE_URL}/api/process`, {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      console.log('任务创建成功:', result.data.job_id);
+      return result.data.job_id;
+    } else {
+      throw new Error(result.message || '任务创建失败');
+    }
+    
+  } catch (error) {
+    console.error('任务提交失败:', error);
+    throw error;
+  }
+};</pre>
+                </li>
+                <li>
+                    <strong>监控处理进度</strong> (二选一)
+                    <ul>
+                        <li>
+                            <strong>方法1: 轮询</strong>
+                            <p>定期调用 <code>GET /api/status/{job_id}</code> 获取最新进度。</p>
+                        </li>
+                        <li>
+                            <strong>方法2: SSE实时更新</strong> (推荐)
+                            <p>建立 <code>GET /api/progress/{job_id}</code> SSE连接，接收实时进度更新。</p>
+                        </li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>下载处理结果</strong> (任务完成后)
+                    <p>任务完成后调用 <code>GET /api/download/{job_id}</code> 下载分离的音轨。</p>
+                </li>
+                <li>
+                    <strong>清理资源</strong> (可选但推荐)
+                    <p>下载完成后调用 <code>DELETE /api/cleanup/{job_id}</code> 清理服务器上的临时文件。</p>
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Demucs音频分离工具 &copy; 2024 | 基于<a href="https://github.com/facebookresearch/demucs" style="color: white; text-decoration: underline;">Demucs</a>开发</p>
+        </div>
+    </footer>
+</body>
+</html> 

@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试指南 - Demucs 音频分离工具</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🧪 测试指南</h1>
+            <p>完整的功能测试指南，确保系统运行正常</p>
+            <div class="main-nav">
+                <a href="/" class="nav-link">🏠 首页</a>
+                <a href="/mcp" class="nav-link">🔗 MCP协议</a>
+                <a href="/api-docs" class="nav-link">📚 API文档</a>
+                <a href="/docs" class="nav-link">📖 使用指南</a>
+                <a href="/test-guide" class="nav-link active">🧪 测试指南</a>
+                <a href="/admin" class="nav-link">🛠️ 管理面板</a>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container container-sm">
+        <!-- 目录 -->
+        <div class="card" style="background: #f8f9fa;">
+            <h3>📋 测试目录</h3>
+            <ul style="list-style: none; padding-left: 0;">
+                <li style="margin: 8px 0;"><a href="#quick-tests" class="text-primary">⚡ 快速测试</a></li>
+                <li style="margin: 8px 0;"><a href="#api-tests" class="text-primary">🔧 API测试</a></li>
+                <li style="margin: 8px 0;"><a href="#mcp-tests" class="text-primary">🔗 MCP测试</a></li>
+                <li style="margin: 8px 0;"><a href="#format-tests" class="text-primary">📁 格式测试</a></li>
+                <li style="margin: 8px 0;"><a href="#performance-tests" class="text-primary">⚡ 性能测试</a></li>
+                <li style="margin: 8px 0;"><a href="#automated-tests" class="text-primary">🤖 自动化测试</a></li>
+                <li style="margin: 8px 0;"><a href="#troubleshooting-tests" class="text-primary">🔍 故障诊断</a></li>
+            </ul>
+        </div>
+
+        <!-- 快速测试 -->
+        <div class="card" id="quick-tests">
+            <h2>⚡ 快速测试</h2>
+            <p>这些测试可以快速验证系统的基本功能是否正常。</p>
+            
+            <div class="grid">
+                <div class="card text-center" style="border-top: 4px solid var(--success-color);">
+                    <h4>🌐 基础服务测试</h4>
+                    <p>验证Web服务器和核心功能</p>
+                    <a href="/" class="btn btn-success">访问首页</a>
+                    <a href="/api/models" class="btn btn-primary">API健康检查</a>
+                </div>
+
+                <div class="card text-center" style="border-top: 4px solid var(--primary-color);">
+                    <h4>🎵 音频分离测试</h4>
+                    <p>使用示例文件测试分离功能</p>
+                    <a href="#" class="btn btn-primary" onclick="testAudioSeparation()">开始测试</a>
+                </div>
+
+                <div class="card text-center" style="border-top: 4px solid var(--info-color);">
+                    <h4>🔗 MCP协议测试</h4>
+                    <p>验证MCP接口功能</p>
+                    <a href="/test/mcp" class="btn btn-info">MCP测试页面</a>
+                </div>
+
+                <div class="card text-center" style="border-top: 4px solid var(--warning-color);">
+                    <h4>📁 格式支持测试</h4>
+                    <p>测试新增的格式和质量功能</p>
+                    <a href="#" class="btn btn-warning" onclick="testFormats()">测试格式</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- API测试 -->
+        <div class="card" id="api-tests">
+            <h2>🔧 API接口测试</h2>
+            <p>详细测试所有REST API端点的功能。</p>
+            
+            <h3>基础API测试</h3>
+            <div class="grid grid-2">
+                <div class="test-section">
+                    <h4>模型API</h4>
+                    <p>测试模型列表获取功能</p>
+                    <button class="btn btn-primary w-100" onclick="testModelsAPI()">测试 GET /api/models</button>
+                    <div id="modelsResult" class="output"></div>
+                </div>
+
+                <div class="test-section">
+                    <h4>格式API <span class="badge new">新功能</span></h4>
+                    <p>测试支持格式获取功能</p>
+                    <button class="btn btn-primary w-100" onclick="testFormatsAPI()">测试 GET /api/formats</button>
+                    <div id="formatsResult" class="output"></div>
+                </div>
+
+                <div class="test-section">
+                    <h4>质量API <span class="badge new">新功能</span></h4>
+                    <p>测试音质选项获取功能</p>
+                    <button class="btn btn-primary w-100" onclick="testQualitiesAPI()">测试 GET /api/qualities</button>
+                    <div id="qualitiesResult" class="output"></div>
+                </div>
+
+                <div class="test-section">
+                    <h4>健康检查</h4>
+                    <p>测试服务器健康状态</p>
+                    <button class="btn btn-success w-100" onclick="testHealthAPI()">测试 GET /health</button>
+                    <div id="healthResult" class="output"></div>
+                </div>
+            </div>
+
+            <h3>处理API测试</h3>
+            <div class="warning-box">
+                <h4>⚠️ 注意</h4>
+                <p>以下测试需要实际的音频文件。请确保测试文件存在于 <code>test/</code> 目录。</p>
+            </div>
+
+            <div class="grid">
+                <div class="test-section">
+                    <h4>基础音频处理</h4>
+                    <button class="btn btn-primary" onclick="testBasicProcessing()">测试基础处理</button>
+                    <div id="basicProcessResult" class="output"></div>
+                </div>
+
+                <div class="test-section">
+                    <h4>格式与质量处理 <span class="badge updated">已升级</span></h4>
+                    <button class="btn btn-accent" onclick="testFormatQualityProcessing()">测试格式质量</button>
+                    <div id="formatQualityResult" class="output"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MCP测试 -->
+        <div class="card" id="mcp-tests">
+            <h2>🔗 MCP协议测试</h2>
+            <p>测试MCP (Model Context Protocol) 功能的完整性。</p>
+
+            <div class="info-box">
+                <h4>🎯 MCP测试范围</h4>
+                <ul>
+                    <li>JSON-RPC 2.0协议兼容性</li>
+                    <li>工具调用和响应</li>
+                    <li>实时进度流（SSE）</li>
+                    <li>错误处理和异常情况</li>
+                </ul>
+            </div>
+
+            <div class="grid">
+                <div class="test-section">
+                    <h4>协议初始化</h4>
+                    <button class="btn btn-primary" onclick="testMCPInitialize()">测试初始化</button>
+                    <div id="mcpInitResult" class="output"></div>
+                </div>
+
+                <div class="test-section">
+                    <h4>工具列表</h4>
+                    <button class="btn btn-primary" onclick="testMCPTools()">测试工具列表</button>
+                    <div id="mcpToolsResult" class="output"></div>
+                </div>
+
+                <div class="test-section">
+                    <h4>音频分离工具</h4>
+                    <button class="btn btn-success" onclick="testMCPSeparation()">测试分离工具</button>
+                    <div id="mcpSeparationResult" class="output"></div>
+                </div>
+
+                <div class="test-section">
+                    <h4>SSE流测试</h4>
+                    <button class="btn btn-info" onclick="testMCPStream()">测试实时流</button>
+                    <div id="mcpStreamResult" class="output"></div>
+                </div>
+            </div>
+
+            <div class="text-center mt-3">
+                <a href="/test/mcp" class="btn btn-accent btn-lg">访问交互式MCP测试页面</a>
+            </div>
+        </div>
+
+        <!-- 格式测试 -->
+        <div class="card" id="format-tests">
+            <h2>📁 格式与质量测试</h2>
+            <p>测试新增的输出格式和音质控制功能。</p>
+
+            <h3>支持格式测试</h3>
+            <div class="grid grid-3">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h5>WAV格式测试</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>测试WAV无损输出</p>
+                        <button class="btn btn-primary btn-sm" onclick="testWAVFormat()">测试WAV</button>
+                        <div id="wavResult" class="mt-2" style="font-size: 0.9em;"></div>
+                    </div>
+                </div>
+
+                <div class="card card-success">
+                    <div class="card-header">
+                        <h5>MP3格式测试</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>测试MP3压缩输出</p>
+                        <button class="btn btn-success btn-sm" onclick="testMP3Format()">测试MP3</button>
+                        <div id="mp3Result" class="mt-2" style="font-size: 0.9em;"></div>
+                    </div>
+                </div>
+
+                <div class="card card-warning">
+                    <div class="card-header">
+                        <h5>FLAC格式测试</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>测试FLAC无损压缩</p>
+                        <button class="btn btn-warning btn-sm" onclick="testFLACFormat()">测试FLAC</button>
+                        <div id="flacResult" class="mt-2" style="font-size: 0.9em;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>音质选项测试</h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>质量等级</th>
+                        <th>描述</th>
+                        <th>测试操作</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>lossless</strong></td>
+                        <td>无损质量</td>
+                        <td><button class="btn btn-sm btn-primary" onclick="testQuality('lossless')">测试</button></td>
+                        <td><span id="losslessStatus">待测试</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>high</strong></td>
+                        <td>高质量 (320kbps)</td>
+                        <td><button class="btn btn-sm btn-primary" onclick="testQuality('high')">测试</button></td>
+                        <td><span id="highStatus">待测试</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>medium</strong></td>
+                        <td>中等质量 (192kbps)</td>
+                        <td><button class="btn btn-sm btn-primary" onclick="testQuality('medium')">测试</button></td>
+                        <td><span id="mediumStatus">待测试</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>low</strong></td>
+                        <td>低质量 (128kbps)</td>
+                        <td><button class="btn btn-sm btn-primary" onclick="testQuality('low')">测试</button></td>
+                        <td><span id="lowStatus">待测试</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="tip">
+                <strong>💡 测试提示：</strong> 格式和质量测试会创建实际的音频分离任务。
+                请确保有测试音频文件，并注意测试时间可能较长。
+            </div>
+        </div>
+
+        <!-- 性能测试 -->
+        <div class="card" id="performance-tests">
+            <h2>⚡ 性能测试</h2>
+            <p>测试系统在不同负载下的性能表现。</p>
+
+            <div class="warning-box">
+                <h4>⚠️ 性能测试说明</h4>
+                <p>以下测试可能会对服务器造成较高负载，请在适当的时候运行。</p>
+            </div>
+
+            <div class="grid">
+                <div class="test-section">
+                    <h4>并发请求测试</h4>
+                    <p>测试系统处理多个同时请求的能力</p>
+                    <button class="btn btn-warning" onclick="testConcurrentRequests()">测试并发</button>
+                    <div id="concurrentResult" class="output"></div>
+                </div>
+
+                <div class="test-section">
+                    <h4>大文件处理测试</h4>
+                    <p>测试大尺寸音频文件的处理能力</p>
+                    <button class="btn btn-warning" onclick="testLargeFile()">测试大文件</button>
+                    <div id="largeFileResult" class="output"></div>
+                </div>
+
+                <div class="test-section">
+                    <h4>内存使用测试</h4>
+                    <p>监控处理过程中的内存使用情况</p>
+                    <button class="btn btn-info" onclick="testMemoryUsage()">监控内存</button>
+                    <div id="memoryResult" class="output"></div>
+                </div>
+
+                <div class="test-section">
+                    <h4>响应时间测试</h4>
+                    <p>测试各API端点的响应时间</p>
+                    <button class="btn btn-info" onclick="testResponseTime()">测试响应</button>
+                    <div id="responseTimeResult" class="output"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 自动化测试 -->
+        <div class="card" id="automated-tests">
+            <h2>🤖 自动化测试脚本</h2>
+            <p>提供自动化测试脚本，用于CI/CD和定期检查。</p>
+
+            <div class="grid">
+                <div class="card" style="background: #f8f9fa;">
+                    <h4>基础功能测试</h4>
+                    <p>快速验证所有核心功能</p>
+                    <pre><code># 在项目根目录运行
+python test/test_basic_functionality.py</code></pre>
+                    <button class="btn btn-success" onclick="runBasicTests()">运行基础测试</button>
+                </div>
+
+                <div class="card" style="background: #f8f9fa;">
+                    <h4>API完整性测试</h4>
+                    <p>测试所有API端点的完整性</p>
+                    <pre><code># 测试所有API端点
+python test/test_api_endpoints.py</code></pre>
+                    <button class="btn btn-primary" onclick="runAPITests()">运行API测试</button>
+                </div>
+
+                <div class="card" style="background: #f8f9fa;">
+                    <h4>格式质量快速测试</h4>
+                    <p>快速测试音频格式和质量功能</p>
+                    <pre><code># 快速格式测试（跳过耗时的FLAC测试）
+python test_format_quality_quick.py</code></pre>
+                    <button class="btn btn-accent" onclick="runFormatTests()">运行格式测试</button>
+                </div>
+
+                <div class="card" style="background: #f8f9fa;">
+                    <h4>MCP协议测试</h4>
+                    <p>完整的MCP协议功能测试</p>
+                    <pre><code># 测试MCP协议功能
+python test/test_mcp_protocol.py</code></pre>
+                    <button class="btn btn-info" onclick="runMCPTests()">运行MCP测试</button>
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <h4>🔄 持续集成配置</h4>
+                <p>为CI/CD环境配置自动化测试：</p>
+                <pre><code># GitHub Actions 配置示例
+name: Test Demucs Service
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run tests
+        run: python test/run_all_tests.py</code></pre>
+            </div>
+        </div>
+
+        <!-- 故障诊断 -->
+        <div class="card" id="troubleshooting-tests">
+            <h2>🔍 故障诊断测试</h2>
+            <p>当系统出现问题时，使用这些测试来定位和诊断问题。</p>
+
+            <div class="grid">
+                <div class="test-section">
+                    <h4>系统组件检查</h4>
+                    <button class="btn btn-primary" onclick="checkSystemComponents()">检查组件</button>
+                    <div id="systemCheck" class="output"></div>
+                </div>
+
+                <div class="test-section">
+                    <h4>网络连接测试</h4>
+                    <button class="btn btn-primary" onclick="testNetworkConnectivity()">测试网络</button>
+                    <div id="networkCheck" class="output"></div>
+                </div>
+
+                <div class="test-section">
+                    <h4>依赖库检查</h4>
+                    <button class="btn btn-info" onclick="checkDependencies()">检查依赖</button>
+                    <div id="dependencyCheck" class="output"></div>
+                </div>
+
+                <div class="test-section">
+                    <h4>日志分析</h4>
+                    <button class="btn btn-warning" onclick="analyzeLogs()">分析日志</button>
+                    <div id="logAnalysis" class="output"></div>
+                </div>
+            </div>
+
+            <div class="error-box">
+                <h4>🚨 常见问题诊断</h4>
+                <ul>
+                    <li><strong>上传失败</strong>：检查文件大小限制和格式支持</li>
+                    <li><strong>处理超时</strong>：检查服务器资源和模型加载状态</li>
+                    <li><strong>API错误</strong>：检查服务器启动状态和端口配置</li>
+                    <li><strong>MCP连接问题</strong>：检查JSON-RPC协议兼容性</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 测试报告 -->
+        <div class="card">
+            <h2>📊 测试报告</h2>
+            <p>实时测试结果汇总和系统状态概览。</p>
+
+            <div class="grid grid-2">
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h5>测试概况</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="testSummary">
+                            <p>总测试数: <span id="totalTests">0</span></p>
+                            <p>成功: <span id="passedTests" class="text-success">0</span></p>
+                            <p>失败: <span id="failedTests" class="text-danger">0</span></p>
+                            <p>跳过: <span id="skippedTests" class="text-warning">0</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h5>系统状态</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="systemStatus">
+                            <p>Web服务: <span id="webStatus" class="badge">检查中...</span></p>
+                            <p>API服务: <span id="apiStatus" class="badge">检查中...</span></p>
+                            <p>MCP服务: <span id="mcpStatus" class="badge">检查中...</span></p>
+                            <p>处理服务: <span id="processStatus" class="badge">检查中...</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-3">
+                <button class="btn btn-success btn-lg" onclick="runAllTests()">🧪 运行所有测试</button>
+                <button class="btn btn-primary btn-lg ml-2" onclick="generateReport()">📋 生成报告</button>
+                <button class="btn btn-secondary btn-lg ml-2" onclick="clearResults()">🗑️ 清空结果</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Demucs音频分离工具 &copy; 2024 | 基于<a href="https://github.com/facebookresearch/demucs" style="color: white; text-decoration: underline;">Demucs</a>开发</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript文件 -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // 测试计数器
+        let testStats = {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            skipped: 0
+        };
+
+        // 更新测试统计
+        function updateTestStats() {
+            document.getElementById('totalTests').textContent = testStats.total;
+            document.getElementById('passedTests').textContent = testStats.passed;
+            document.getElementById('failedTests').textContent = testStats.failed;
+            document.getElementById('skippedTests').textContent = testStats.skipped;
+        }
+
+        // 记录测试结果
+        function recordTestResult(success) {
+            testStats.total++;
+            if (success) {
+                testStats.passed++;
+            } else {
+                testStats.failed++;
+            }
+            updateTestStats();
+        }
+
+        // API测试函数
+        async function testModelsAPI() {
+            const resultDiv = document.getElementById('modelsResult');
+            resultDiv.innerHTML = '正在测试...';
+            
+            try {
+                const response = await fetch('/api/models');
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                resultDiv.className = 'output alert alert-success';
+                recordTestResult(true);
+            } catch (error) {
+                resultDiv.innerHTML = `错误: ${error.message}`;
+                resultDiv.className = 'output alert alert-error';
+                recordTestResult(false);
+            }
+        }
+
+        async function testFormatsAPI() {
+            const resultDiv = document.getElementById('formatsResult');
+            resultDiv.innerHTML = '正在测试...';
+            
+            try {
+                const response = await fetch('/api/formats');
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                resultDiv.className = 'output alert alert-success';
+                recordTestResult(true);
+            } catch (error) {
+                resultDiv.innerHTML = `错误: ${error.message}`;
+                resultDiv.className = 'output alert alert-error';
+                recordTestResult(false);
+            }
+        }
+
+        async function testQualitiesAPI() {
+            const resultDiv = document.getElementById('qualitiesResult');
+            resultDiv.innerHTML = '正在测试...';
+            
+            try {
+                const response = await fetch('/api/qualities');
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                resultDiv.className = 'output alert alert-success';
+                recordTestResult(true);
+            } catch (error) {
+                resultDiv.innerHTML = `错误: ${error.message}`;
+                resultDiv.className = 'output alert alert-error';
+                recordTestResult(false);
+            }
+        }
+
+        async function testHealthAPI() {
+            const resultDiv = document.getElementById('healthResult');
+            resultDiv.innerHTML = '正在测试...';
+            
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                resultDiv.className = 'output alert alert-success';
+                recordTestResult(true);
+            } catch (error) {
+                resultDiv.innerHTML = `错误: ${error.message}`;
+                resultDiv.className = 'output alert alert-error';
+                recordTestResult(false);
+            }
+        }
+
+        // 快速系统状态检查
+        async function checkSystemStatus() {
+            const status = {
+                web: document.getElementById('webStatus'),
+                api: document.getElementById('apiStatus'),
+                mcp: document.getElementById('mcpStatus'),
+                process: document.getElementById('processStatus')
+            };
+
+            // 检查Web服务
+            try {
+                await fetch('/');
+                status.web.textContent = '正常';
+                status.web.className = 'badge badge-success';
+            } catch (error) {
+                status.web.textContent = '异常';
+                status.web.className = 'badge badge-danger';
+            }
+
+            // 检查API服务
+            try {
+                await fetch('/api/models');
+                status.api.textContent = '正常';
+                status.api.className = 'badge badge-success';
+            } catch (error) {
+                status.api.textContent = '异常';
+                status.api.className = 'badge badge-danger';
+            }
+
+            // 检查MCP服务
+            try {
+                await fetch('/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+                status.mcp.textContent = '正常';
+                status.mcp.className = 'badge badge-success';
+            } catch (error) {
+                status.mcp.textContent = '异常';
+                status.mcp.className = 'badge badge-danger';
+            }
+
+            // 检查处理服务（通过健康检查）
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                if (data.status === 'healthy') {
+                    status.process.textContent = '正常';
+                    status.process.className = 'badge badge-success';
+                } else {
+                    status.process.textContent = '警告';
+                    status.process.className = 'badge badge-warning';
+                }
+            } catch (error) {
+                status.process.textContent = '异常';
+                status.process.className = 'badge badge-danger';
+            }
+        }
+
+        // 运行所有测试
+        async function runAllTests() {
+            window.showMessage('开始运行所有测试...', 'info');
+            
+            // 重置统计
+            testStats = { total: 0, passed: 0, failed: 0, skipped: 0 };
+            updateTestStats();
+            
+            // 依次运行测试
+            await testModelsAPI();
+            await testFormatsAPI();
+            await testQualitiesAPI();
+            await testHealthAPI();
+            
+            window.showMessage(`测试完成！通过: ${testStats.passed}, 失败: ${testStats.failed}`, 
+                testStats.failed === 0 ? 'success' : 'warning');
+        }
+
+        // 清空结果
+        function clearResults() {
+            const outputs = document.querySelectorAll('.output');
+            outputs.forEach(output => {
+                output.innerHTML = '';
+                output.className = 'output';
+            });
+            
+            testStats = { total: 0, passed: 0, failed: 0, skipped: 0 };
+            updateTestStats();
+            
+            window.showMessage('测试结果已清空', 'info');
+        }
+
+        // 生成报告
+        function generateReport() {
+            const report = {
+                timestamp: new Date().toISOString(),
+                stats: testStats,
+                system: {
+                    userAgent: navigator.userAgent,
+                    timestamp: Date.now()
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `demucs-test-report-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            window.showMessage('测试报告已生成', 'success');
+        }
+
+        // 页面加载时自动检查系统状态
+        document.addEventListener('DOMContentLoaded', function() {
+            checkSystemStatus();
+        });
+
+        // 占位符函数（在实际使用中需要实现）
+        function testAudioSeparation() { window.showMessage('音频分离测试功能开发中...', 'info'); }
+        function testFormats() { window.showMessage('格式测试功能开发中...', 'info'); }
+        function testBasicProcessing() { window.showMessage('基础处理测试功能开发中...', 'info'); }
+        function testFormatQualityProcessing() { window.showMessage('格式质量测试功能开发中...', 'info'); }
+        function testMCPInitialize() { window.showMessage('MCP初始化测试功能开发中...', 'info'); }
+        function testMCPTools() { window.showMessage('MCP工具测试功能开发中...', 'info'); }
+        function testMCPSeparation() { window.showMessage('MCP分离测试功能开发中...', 'info'); }
+        function testMCPStream() { window.showMessage('MCP流测试功能开发中...', 'info'); }
+        function testWAVFormat() { window.showMessage('WAV格式测试功能开发中...', 'info'); }
+        function testMP3Format() { window.showMessage('MP3格式测试功能开发中...', 'info'); }
+        function testFLACFormat() { window.showMessage('FLAC格式测试功能开发中...', 'info'); }
+        function testQuality(quality) { window.showMessage(`${quality}质量测试功能开发中...`, 'info'); }
+        function testConcurrentRequests() { window.showMessage('并发测试功能开发中...', 'info'); }
+        function testLargeFile() { window.showMessage('大文件测试功能开发中...', 'info'); }
+        function testMemoryUsage() { window.showMessage('内存测试功能开发中...', 'info'); }
+        function testResponseTime() { window.showMessage('响应时间测试功能开发中...', 'info'); }
+        function runBasicTests() { window.showMessage('基础测试运行功能开发中...', 'info'); }
+        function runAPITests() { window.showMessage('API测试运行功能开发中...', 'info'); }
+        function runFormatTests() { window.showMessage('格式测试运行功能开发中...', 'info'); }
+        function runMCPTests() { window.showMessage('MCP测试运行功能开发中...', 'info'); }
+        function checkSystemComponents() { window.showMessage('系统组件检查功能开发中...', 'info'); }
+        function testNetworkConnectivity() { window.showMessage('网络连接测试功能开发中...', 'info'); }
+        function checkDependencies() { window.showMessage('依赖检查功能开发中...', 'info'); }
+        function analyzeLogs() { window.showMessage('日志分析功能开发中...', 'info'); }
+    </script>
+</body>
+</html> 

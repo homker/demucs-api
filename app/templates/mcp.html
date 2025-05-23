@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP协议支持 - Demucs 音频分离工具</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🔗 MCP (Model Context Protocol) 支持</h1>
+            <p>标准MCP协议集成，与Claude Desktop、Cursor等工具无缝连接</p>
+            <div class="main-nav">
+                <a href="/" class="nav-link">🏠 首页</a>
+                <a href="/mcp" class="nav-link active">🔗 MCP协议</a>
+                <a href="/api-docs" class="nav-link">📚 API文档</a>
+                <a href="/docs" class="nav-link">📖 使用指南</a>
+                <a href="/test-guide" class="nav-link">🧪 测试指南</a>
+                <a href="/admin" class="nav-link">🛠️ 管理面板</a>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container container-sm">
+        <div class="card">
+            <h2>✨ 标准MCP协议集成</h2>
+            <p>本应用完全支持 <strong>MCP (Model Context Protocol)</strong> 协议！这意味着您可以在任何支持MCP的客户端中使用我们的音频分离服务。</p>
+            
+            <div class="highlight-box">
+                <h4>🎯 MCP客户端配置</h4>
+                <p><strong>服务器端点:</strong> <code>http://localhost:8080/mcp</code></p>
+                <p><strong>协议:</strong> JSON-RPC 2.0 over HTTP</p>
+                <p><strong>方法:</strong> POST</p>
+                <p><strong>Content-Type:</strong> application/json</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="/test/mcp" class="test-button">
+                    🧪 测试MCP功能
+                </a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>🛠️ 可用的MCP工具</h2>
+            <div class="tools-grid">
+                <div class="tool-card">
+                    <h5><strong>separate_audio</strong></h5>
+                    <p>使用Demucs模型分离音频文件</p>
+                    <p><small><strong>参数:</strong> file_path, model, stems, stream_progress</small></p>
+                </div>
+                <div class="tool-card">
+                    <h5><strong>get_models</strong></h5>
+                    <p>获取可用的Demucs模型列表</p>
+                    <p><small><strong>参数:</strong> 无需参数</small></p>
+                </div>
+                <div class="tool-card">
+                    <h5><strong>get_job_status</strong></h5>
+                    <p>查询音频分离任务的状态</p>
+                    <p><small><strong>参数:</strong> job_id</small></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>📚 可用的MCP资源</h2>
+            <ul>
+                <li><code>demucs://docs/api</code> - 完整的API使用文档</li>
+                <li><code>demucs://models/info</code> - 详细的模型信息和特性</li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h2>🌊 流式进度支持</h2>
+            <p>我们的MCP实现支持SSE (Server-Sent Events) 流式进度更新，您可以实时监控音频分离的进度：</p>
+            <code>GET http://localhost:8080/mcp/stream/{job_id}</code>
+        </div>
+        
+        <div class="card">
+            <h2>📋 MCP协议使用示例</h2>
+            
+            <h4>1. 初始化连接:</h4>
+            <pre>{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "1.0",
+    "capabilities": {},
+    "clientInfo": {
+      "name": "your-client-name",
+      "version": "1.0.0"
+    }
+  }
+}</pre>
+            
+            <h4>2. 调用音频分离工具:</h4>
+            <pre>{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "separate_audio",
+    "arguments": {
+      "file_path": "/path/to/audio.mp3",
+      "model": "htdemucs",
+      "stems": ["vocals", "drums"],
+      "stream_progress": true
+    }
+  }
+}</pre>
+            
+            <h4>3. 获取可用工具:</h4>
+            <pre>{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/list",
+  "params": {}
+}</pre>
+            
+            <div class="tip">
+                <strong>💡 集成提示:</strong> 这个标准MCP实现可以与Claude Desktop、Cursor等支持MCP的工具无缝集成。
+                只需在客户端配置中添加我们的服务器端点即可开始使用！
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>🔧 客户端集成指南</h2>
+            
+            <h3>Claude Desktop 集成</h3>
+            <p>在Claude Desktop的配置文件中添加:</p>
+            <pre>{
+  "mcpServers": {
+    "demucs": {
+      "command": "node",
+      "args": ["path/to/mcp-client.js"],
+      "env": {
+        "DEMUCS_SERVER_URL": "http://localhost:8080/mcp"
+      }
+    }
+  }
+}</pre>
+            
+            <h3>Cursor 集成</h3>
+            <p>在Cursor的设置中配置MCP服务器端点:</p>
+            <pre>MCP Server URL: http://localhost:8080/mcp
+Protocol: JSON-RPC 2.0
+Transport: HTTP</pre>
+            
+            <h3>自定义客户端</h3>
+            <p>您可以使用任何支持JSON-RPC 2.0的客户端库来集成我们的MCP服务器。</p>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Demucs音频分离工具 &copy; 2024 | 基于<a href="https://github.com/facebookresearch/demucs" style="color: white; text-decoration: underline;">Demucs</a>开发</p>
+        </div>
+    </footer>
+</body>
+</html> 

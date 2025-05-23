@@ -53,9 +53,12 @@ def configure_logging(app):
 
 def init_services(app):
     """Initialize application services"""
+    # Create config instance - 使用Config类实例而不是Flask config字典
+    config_instance = Config()
+    
     # Create service instances
-    app.file_manager = FileManager(app.config)
-    app.audio_separator = AudioSeparator(app.config)
+    app.file_manager = FileManager(config_instance)
+    app.audio_separator = AudioSeparator(config_instance)
     app.mcp_server = MCPServer()
     
     # Set app reference for MCP service
@@ -68,21 +71,16 @@ def register_blueprints(app):
     # Import and register routes from routes module
     routes.init_app(app)
     
-    # 主页路由
-    @app.route('/')
-    def index():
-        # 获取BASE_URL环境变量传递给模板
-        base_url = app.config.get('BASE_URL', '')
-        return render_template('index.html', base_url=base_url)
+    # 注册管理面板路由
+    from app.routes.admin import admin_bp
+    app.register_blueprint(admin_bp)
     
-    # MCP测试页面路由
+    # MCP测试页面路由 - 直接定义，因为它不在main_bp中
     @app.route('/test/mcp')
     def mcp_test():
         base_url = app.config.get('BASE_URL', '')
         return render_template('mcp_test.html', base_url=base_url)
         
-    app.logger.info("Main routes initialized")
-    
     app.logger.info("Application blueprints registered")
 
 def register_error_handlers(app):

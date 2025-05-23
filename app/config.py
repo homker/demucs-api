@@ -15,6 +15,8 @@ class Config:
     
     # Admin settings
     ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN', 'admin-token-12345')  # 用于管理接口认证的令牌
+    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
+    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
     
     # File paths
     BASE_DIR = Path(os.path.abspath(os.path.dirname(__file__))).parent
@@ -30,6 +32,34 @@ class Config:
     DEFAULT_MODEL = os.environ.get('DEFAULT_MODEL', 'htdemucs')
     SAMPLE_RATE = int(os.environ.get('SAMPLE_RATE', 44100))
     CHANNELS = int(os.environ.get('CHANNELS', 2))
+    
+    # Audio output settings
+    DEFAULT_OUTPUT_FORMAT = os.environ.get('DEFAULT_OUTPUT_FORMAT', 'wav')  # wav, mp3, flac
+    SUPPORTED_OUTPUT_FORMATS = ['wav', 'mp3', 'flac']
+    
+    # Audio quality settings (for lossy formats like mp3)
+    DEFAULT_AUDIO_QUALITY = os.environ.get('DEFAULT_AUDIO_QUALITY', 'high')  # low, medium, high, lossless
+    AUDIO_QUALITY_SETTINGS = {
+        'low': {
+            'mp3_bitrate': '128k',
+            'sample_rate': 22050,
+            'description': '低质量 (128kbps, 22kHz)'
+        },
+        'medium': {
+            'mp3_bitrate': '192k', 
+            'sample_rate': 44100,
+            'description': '中等质量 (192kbps, 44kHz)'
+        },
+        'high': {
+            'mp3_bitrate': '320k',
+            'sample_rate': 44100, 
+            'description': '高质量 (320kbps, 44kHz)'
+        },
+        'lossless': {
+            'sample_rate': 44100,
+            'description': '无损质量 (WAV/FLAC, 44kHz)'
+        }
+    }
     
     # Flask server settings
     HOST = os.environ.get('HOST', '0.0.0.0')

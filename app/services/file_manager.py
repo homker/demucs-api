@@ -15,9 +15,9 @@ class FileManager:
     
     def __init__(self, config):
         self.config = config
-        self.upload_folder = config['UPLOAD_FOLDER']
-        self.output_folder = config['OUTPUT_FOLDER']
-        self.file_retention_minutes = config['FILE_RETENTION_MINUTES']
+        self.upload_folder = config.UPLOAD_FOLDER
+        self.output_folder = config.OUTPUT_FOLDER
+        self.file_retention_minutes = config.FILE_RETENTION_MINUTES
         
         # Ensure directories exist
         os.makedirs(self.upload_folder, exist_ok=True)
@@ -132,6 +132,54 @@ class FileManager:
             return abs_zip_path
         except Exception as e:
             logger.error(f"Error creating ZIP file: {str(e)}")
+            return None
+
+    def create_zip_from_output(self, job_id: str, output_paths: List[str]) -> Optional[str]:
+        """
+        Create a ZIP file from output file paths
+        
+        Args:
+            job_id: Job identifier for the zip file name
+            output_paths: List of file paths to include in the ZIP
+            
+        Returns:
+            Path to the created ZIP file or None if failed
+        """
+        try:
+            # Create ZIP filename
+            zip_filename = f"demucs_output_{job_id}.zip"
+            # Store ZIP in the same date directory as the job output
+            job_output_dir = self.get_job_output_directory(job_id)
+            if job_output_dir:
+                # Use the parent directory of job output (the date directory)
+                zip_path = os.path.join(os.path.dirname(job_output_dir), zip_filename)
+            else:
+                # Fallback to output folder root
+                zip_path = os.path.join(self.output_folder, zip_filename)
+            
+            # 确保输出目录存在
+            os.makedirs(os.path.dirname(zip_path), exist_ok=True)
+            
+            # Create ZIP file
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for file_path in output_paths:
+                    if os.path.isfile(file_path):
+                        # Use just the filename as the archive name
+                        arcname = os.path.basename(file_path)
+                        zipf.write(file_path, arcname=arcname)
+                        logger.info(f"Added to ZIP: {file_path} -> {arcname}")
+            
+            # 验证ZIP文件是否创建成功
+            if not os.path.exists(zip_path) or os.path.getsize(zip_path) == 0:
+                logger.error(f"ZIP file creation failed or is empty: {zip_path}")
+                return None
+            
+            # 返回绝对路径
+            abs_zip_path = os.path.abspath(zip_path)
+            logger.info(f"Created ZIP file from output: {zip_path}, 大小: {os.path.getsize(zip_path)} 字节")
+            return abs_zip_path
+        except Exception as e:
+            logger.error(f"Error creating ZIP file from output: {str(e)}")
             return None
     
     def get_file_path(self, filename: str, folder: str = None) -> Optional[str]:

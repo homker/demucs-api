@@ -46,7 +46,7 @@ class MCPSSEClient {
             }
             
             this.currentJobId = jobId;
-            const url = `${this.baseUrl}/mcp/progress/${jobId}`;
+            const url = `${this.baseUrl}/api/progress/${jobId}`;
             this.debug(`正在连接到SSE: ${url}`);
             
             try {
@@ -130,7 +130,7 @@ class MCPSSEClient {
             throw new Error('未指定任务ID');
         }
         
-        const url = `${this.baseUrl}/mcp/status/${targetJobId}`;
+        const url = `${this.baseUrl}/api/status/${targetJobId}`;
         this.debug(`正在获取任务状态: ${url}`);
         
         const response = await fetch(url);
@@ -155,7 +155,7 @@ class MCPSSEClient {
             throw new Error('未指定任务ID');
         }
         
-        const url = `${this.baseUrl}/mcp/cleanup/${targetJobId}`;
+        const url = `${this.baseUrl}/api/cleanup/${targetJobId}`;
         this.debug(`正在清理任务资源: ${url}`);
         
         const response = await fetch(url, {

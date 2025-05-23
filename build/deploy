@@ -71,15 +71,37 @@ done
 
 # 环境变量检查
 check_env_file() {
+    # 获取项目根目录（deploy脚本在build/目录下）
+    PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    cd "$PROJECT_ROOT"
+    
     if [ ! -f .env ]; then
         echo "警告: .env文件不存在，将使用默认配置"
-        cp .env.example .env
+        # 从config目录复制配置模板
+        if [ -f config/.env.example ]; then
+            cp config/.env.example .env
+        else
+            echo "错误: 配置模板 config/.env.example 不存在"
+            exit 1
+        fi
     fi
     
     # 根据环境更新配置
     if [ "$ENV" = "production" ]; then
-        sed -i.bak 's/DEBUG=true/DEBUG=false/' .env
-        sed -i.bak 's/FLASK_ENV=development/FLASK_ENV=production/' .env
+        # 如果存在生产环境配置模板，先从中复制
+        if [ -f config/.env.production ]; then
+            echo "使用生产环境配置模板..."
+            cp config/.env.production .env
+        else
+            # 否则手动修改现有配置
+            sed -i.bak 's/DEBUG=true/DEBUG=false/' .env
+            sed -i.bak 's/FLASK_ENV=development/FLASK_ENV=production/' .env
+        fi
+        # 更新端口号
+        sed -i.bak "s/PORT=[0-9]*/PORT=$PORT/" .env
+    elif [ "$ENV" = "development" ] && [ -f config/.env.development ]; then
+        echo "使用开发环境配置模板..."
+        cp config/.env.development .env
         sed -i.bak "s/PORT=[0-9]*/PORT=$PORT/" .env
     fi
     
@@ -87,15 +109,21 @@ check_env_file() {
     if [ -f .env.bak ]; then
         rm .env.bak
     fi
+    
+    echo "配置文件已准备完毕"
 }
 
 # 部署到Docker
 deploy_docker() {
     echo "==== 使用Docker部署Demucs音频分离系统 ===="
     
-    # 构建Docker镜像
+    # 确保在项目根目录
+    PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    cd "$PROJECT_ROOT"
+    
+    # 构建Docker镜像（使用build目录下的Dockerfile）
     echo "构建Docker镜像..."
-    docker build -t demucs-api:latest .
+    docker build -f build/Dockerfile -t demucs-api:latest .
     
     # 检查之前的容器
     CONTAINER_ID=$(docker ps -q -f name=demucs-api)

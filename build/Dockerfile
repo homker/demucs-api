@@ -1,7 +1,10 @@
 FROM python:3.10-slim
 
-
+# 设置工作目录
 WORKDIR /app
+
+# 避免交互式安装
+ENV DEBIAN_FRONTEND=noninteractive
 
 # 安装系统依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -11,6 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     build-essential \
     software-properties-common \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # 添加FFmpeg官方仓库并安装最新版本
@@ -32,7 +36,7 @@ fi
 
 # 升级pip并安装依赖
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
 # 复制应用代码
@@ -49,12 +53,11 @@ ENV HOST=0.0.0.0
 ENV TORCH_HOME=/app/models
 ENV OMP_NUM_THREADS=1
 
-# 验证FFmpeg版本和torchaudio后端
+# 验证安装
 RUN ffmpeg -version && \
-    python -c "import torchaudio; print(f'Available backends: {torchaudio.list_audio_backends()}')" || echo "FFmpeg backend not detected in torchaudio, audio processing may be affected"
-
-# 验证MCP相关依赖
-RUN python -c "import flask_cors; import sseclient; print('MCP dependencies installed successfully')"
+    python -c "import torchaudio; print(f'Available backends: {torchaudio.list_audio_backends()}')" && \
+    python -c "import flask_cors; import sseclient; print('MCP dependencies installed successfully')" && \
+    python -c "import demucs; print('Demucs installed successfully')"
 
 VOLUME /app/uploads
 VOLUME /app/outputs

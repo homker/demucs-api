@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Demucs 音频分离系统健康检查脚本
-用于监控系统状态并报告潜在问题
+Demucs音频分离系统健康检查脚本
+用于监控应用的运行状态和系统资源使用情况
 """
 
 import os
@@ -12,9 +12,18 @@ import argparse
 import requests
 import psutil
 import shutil
+import logging
+import subprocess
+from datetime import datetime
+from pathlib import Path
 from dotenv import load_dotenv
 
-# 加载环境变量
+# 获取项目根目录（脚本在build/目录下）
+SCRIPT_DIR = Path(__file__).parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+
+# 切换到项目根目录并加载环境变量
+os.chdir(PROJECT_ROOT)
 load_dotenv()
 
 # 默认配置

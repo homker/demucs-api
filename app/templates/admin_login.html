@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员登录 - Demucs 音频分离工具</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="login-page">
+    <div class="login-wrapper">
+        <div class="login-background">
+            <div class="floating-shapes">
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+                <div class="shape shape-3"></div>
+                <div class="shape shape-4"></div>
+            </div>
+        </div>
+
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="logo">
+                        <div class="logo-icon">🎵</div>
+                        <h1>Demucs 管理面板</h1>
+                    </div>
+                    <p class="subtitle">音频分离工具管理后台</p>
+                </div>
+
+                <!-- 错误消息 -->
+                {% if error %}
+                <div class="alert alert-danger">
+                    <div class="alert-icon">⚠️</div>
+                    <div class="alert-content">
+                        <strong>登录失败</strong>
+                        <p>{{ error }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="POST" onsubmit="handleSubmit(event)" class="login-form">
+                    <div class="form-group">
+                        <label for="username">
+                            <span class="label-icon">👤</span>
+                            用户名
+                        </label>
+                        <input type="text" 
+                               id="username" 
+                               name="username" 
+                               placeholder="请输入管理员用户名"
+                               required 
+                               autofocus
+                               autocomplete="username">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">
+                            <span class="label-icon">🔒</span>
+                            密码
+                        </label>
+                        <div class="password-input-wrapper">
+                            <input type="password" 
+                                   id="password" 
+                                   name="password" 
+                                   placeholder="请输入密码"
+                                   required
+                                   autocomplete="current-password">
+                            <button type="button" 
+                                    class="password-toggle" 
+                                    onclick="togglePassword()"
+                                    tabindex="-1">
+                                <span id="password-icon">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="remember" name="remember">
+                            <span class="checkmark"></span>
+                            <span class="checkbox-label">记住我</span>
+                        </label>
+                        <a href="#" class="forgot-link" onclick="showForgotPassword()">忘记密码？</a>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-login" id="submitBtn">
+                        <span class="btn-loading" id="loading">
+                            <div class="spinner"></div>
+                        </span>
+                        <span id="btnText">🚀 登录管理面板</span>
+                    </button>
+                </form>
+
+                <div class="login-footer">
+                    <div class="divider">
+                        <span>或者</span>
+                    </div>
+                    
+                    <div class="navigation-links">
+                        <a href="/" class="nav-link">
+                            <span class="nav-icon">🏠</span>
+                            <span>返回首页</span>
+                        </a>
+                        <a href="/docs" class="nav-link">
+                            <span class="nav-icon">📖</span>
+                            <span>使用指南</span>
+                        </a>
+                        <a href="/api-docs" class="nav-link">
+                            <span class="nav-icon">📚</span>
+                            <span>API文档</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统信息 -->
+            <div class="system-info">
+                <div class="info-card">
+                    <h3>💼 管理功能</h3>
+                    <ul>
+                        <li>📊 实时任务监控</li>
+                        <li>🗂️ 文件管理</li>
+                        <li>🧹 系统清理</li>
+                        <li>📈 性能统计</li>
+                        <li>🔍 日志查看</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h3>🔐 安全提醒</h3>
+                    <ul>
+                        <li>请使用官方提供的管理员账号</li>
+                        <li>定期更改密码保证安全</li>
+                        <li>不要在公共设备上保存密码</li>
+                        <li>登录异常会自动记录日志</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 忘记密码模态框 -->
+    <div id="forgot-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔑 密码重置</h3>
+                <button class="modal-close" onclick="closeForgotModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-box">
+                    <h4>密码重置说明</h4>
+                    <p>如果您忘记了管理员密码，请按照以下步骤操作：</p>
+                    <ol>
+                        <li>联系系统管理员重置密码</li>
+                        <li>或通过服务器配置文件修改密码</li>
+                        <li>重启服务后使用新密码登录</li>
+                    </ol>
+                </div>
+                
+                <div class="warning-box">
+                    <h4>⚠️ 安全提醒</h4>
+                    <p>出于安全考虑，系统不提供在线密码重置功能。请通过安全渠道联系技术支持。</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeForgotModal()">我知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录帮助 -->
+    <div class="login-help">
+        <button class="help-toggle" onclick="toggleHelp()">
+            <span id="help-icon">❓</span>
+        </button>
+        <div class="help-content" id="help-content">
+            <h4>🆘 登录帮助</h4>
+            <div class="help-section">
+                <h5>默认账号信息：</h5>
+                <p><strong>用户名：</strong> admin</p>
+                <p><strong>密码：</strong> admin123</p>
+            </div>
+            <div class="help-section">
+                <h5>常见问题：</h5>
+                <ul>
+                    <li>确保用户名和密码正确</li>
+                    <li>检查键盘大小写状态</li>
+                    <li>清除浏览器缓存后重试</li>
+                    <li>检查网络连接是否正常</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript文件 -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // 处理表单提交
+        function handleSubmit(event) {
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const loading = document.getElementById('loading');
+            
+            // 禁用按钮并显示加载状态
+            submitBtn.disabled = true;
+            loading.style.display = 'inline-block';
+            btnText.textContent = '登录中...';
+            
+            // 记录登录尝试
+            const username = document.getElementById('username').value;
+            console.log(`登录尝试: ${username} - ${new Date().toLocaleString()}`);
+            
+            // 表单会自然提交，这里只是设置UI状态
+            
+            // 5秒后重置按钮状态（防止卡住）
+            setTimeout(() => {
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
+                btnText.textContent = '🚀 登录管理面板';
+            }, 5000);
+        }
+
+        // 切换密码显示/隐藏
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const passwordIcon = document.getElementById('password-icon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                passwordIcon.textContent = '🙈';
+            } else {
+                passwordInput.type = 'password';
+                passwordIcon.textContent = '👁️';
+            }
+        }
+
+        // 显示忘记密码模态框
+        function showForgotPassword() {
+            document.getElementById('forgot-modal').style.display = 'flex';
+        }
+
+        // 关闭忘记密码模态框
+        function closeForgotModal() {
+            document.getElementById('forgot-modal').style.display = 'none';
+        }
+
+        // 切换帮助内容
+        function toggleHelp() {
+            const helpContent = document.getElementById('help-content');
+            const helpIcon = document.getElementById('help-icon');
+            
+            if (helpContent.style.display === 'block') {
+                helpContent.style.display = 'none';
+                helpIcon.textContent = '❓';
+            } else {
+                helpContent.style.display = 'block';
+                helpIcon.textContent = '❌';
+            }
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 添加输入框聚焦效果
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.classList.add('focused');
+                });
+                
+                input.addEventListener('blur', function() {
+                    if (!this.value) {
+                        this.parentElement.classList.remove('focused');
+                    }
+                });
+            });
+
+            // 检查记住我功能
+            const rememberCheckbox = document.getElementById('remember');
+            const savedUsername = localStorage.getItem('admin_username');
+            if (savedUsername) {
+                document.getElementById('username').value = savedUsername;
+                rememberCheckbox.checked = true;
+            }
+
+            // 保存/清除记住的用户名
+            rememberCheckbox.addEventListener('change', function() {
+                const username = document.getElementById('username').value;
+                if (this.checked && username) {
+                    localStorage.setItem('admin_username', username);
+                } else {
+                    localStorage.removeItem('admin_username');
+                }
+            });
+
+            // 用户名变化时也更新存储
+            document.getElementById('username').addEventListener('input', function() {
+                const rememberCheckbox = document.getElementById('remember');
+                if (rememberCheckbox.checked) {
+                    localStorage.setItem('admin_username', this.value);
+                }
+            });
+
+            // 键盘快捷键
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + Enter 快速提交
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    document.querySelector('.login-form').submit();
+                }
+                
+                // ESC 关闭模态框
+                if (e.key === 'Escape') {
+                    closeForgotModal();
+                    document.getElementById('help-content').style.display = 'none';
+                    document.getElementById('help-icon').textContent = '❓';
+                }
+            });
+
+            // 添加动画效果
+            setTimeout(() => {
+                document.querySelector('.login-card').classList.add('animate-in');
+            }, 100);
+
+            // 浮动形状动画
+            const shapes = document.querySelectorAll('.shape');
+            shapes.forEach((shape, index) => {
+                shape.style.animationDelay = `${index * 0.5}s`;
+            });
+        });
+
+        // 错误消息自动消失
+        const errorAlert = document.querySelector('.alert-danger');
+        if (errorAlert) {
+            setTimeout(() => {
+                errorAlert.style.opacity = '0';
+                setTimeout(() => {
+                    errorAlert.style.display = 'none';
+                }, 300);
+            }, 5000);
+        }
+
+        // 检测登录状态（如果已登录则重定向）
+        fetch('/admin/api/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.authenticated) {
+                    window.showMessage('您已经登录，正在跳转...', 'info');
+                    setTimeout(() => {
+                        window.location.href = '/admin';
+                    }, 1000);
+                }
+            })
+            .catch(() => {
+                // 忽略错误，继续显示登录页面
+            });
+    </script>
+</body>
+</html> 

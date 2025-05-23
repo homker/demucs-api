@@ -95,7 +95,7 @@ def test_subpath_deployment():
         content = response.get_data(as_text=True)
         
         # 检查MCP测试页面的BASE_URL设置
-        api_base_pattern = r"const API_BASE = '([^']*)'"
+        api_base_pattern = r'const API_BASE = ["\']([^"\']*)["\']'
         match = re.search(api_base_pattern, content)
         assert match, "未找到MCP测试页面中的API_BASE设置"
         assert match.group(1) == '/demucs', f"API_BASE错误，期望'/demucs'，实际'{match.group(1)}'"

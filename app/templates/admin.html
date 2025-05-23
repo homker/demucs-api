@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理面板 - Demucs 音频分离工具</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-flex">
+                <h1>🛠️ 管理面板</h1>
+                <div class="header-actions">
+                    <a href="/" class="btn btn-secondary">🏠 返回首页</a>
+                    <a href="/admin/logout" class="btn btn-outline">🚪 退出登录</a>
+                </div>
+            </div>
+            <div class="main-nav">
+                <a href="/" class="nav-link">🏠 首页</a>
+                <a href="/mcp" class="nav-link">🔗 MCP协议</a>
+                <a href="/api-docs" class="nav-link">📚 API文档</a>
+                <a href="/docs" class="nav-link">📖 使用指南</a>
+                <a href="/test-guide" class="nav-link">🧪 测试指南</a>
+                <a href="/admin" class="nav-link active">🛠️ 管理面板</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- 统计概览 -->
+        <div class="card">
+            <h2>📊 系统统计</h2>
+            <div class="grid grid-4">
+                <div class="stat-card card-primary">
+                    <div class="stat-number" id="total-tasks">0</div>
+                    <div class="stat-label">总任务数</div>
+                </div>
+                <div class="stat-card card-success">
+                    <div class="stat-number" id="completed-tasks">0</div>
+                    <div class="stat-label">已完成</div>
+                </div>
+                <div class="stat-card card-warning">
+                    <div class="stat-number" id="processing-tasks">0</div>
+                    <div class="stat-label">处理中</div>
+                </div>
+                <div class="stat-card card-danger">
+                    <div class="stat-number" id="old-tasks">0</div>
+                    <div class="stat-label">过期任务</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速操作 -->
+        <div class="card">
+            <h2>⚡ 快速操作</h2>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="refreshData()">🔄 刷新数据</button>
+                <button class="btn btn-success" onclick="downloadSystemInfo()">📊 导出统计</button>
+                <button class="btn btn-warning" onclick="cleanupOldFiles()">🧹 清理过期文件</button>
+                <button class="btn btn-danger" onclick="cleanupAllFiles()">🗑️ 清理所有文件</button>
+            </div>
+        </div>
+
+        <!-- 服务器状态 -->
+        <div class="card">
+            <h2>💻 服务器状态</h2>
+            <div class="grid grid-2">
+                <div class="card" style="background: #f8f9fa;">
+                    <h4>系统信息</h4>
+                    <div id="system-info">
+                        <p>CPU使用率: <span id="cpu-usage" class="badge">检查中...</span></p>
+                        <p>内存使用: <span id="memory-usage" class="badge">检查中...</span></p>
+                        <p>磁盘空间: <span id="disk-usage" class="badge">检查中...</span></p>
+                        <p>运行时间: <span id="uptime" class="badge">检查中...</span></p>
+                    </div>
+                </div>
+                <div class="card" style="background: #f8f9fa;">
+                    <h4>服务状态</h4>
+                    <div id="service-status">
+                        <p>Web服务: <span id="web-status" class="badge badge-success">正常</span></p>
+                        <p>处理服务: <span id="process-status" class="badge">检查中...</span></p>
+                        <p>文件服务: <span id="file-status" class="badge">检查中...</span></p>
+                        <p>数据库: <span id="db-status" class="badge">检查中...</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 任务管理 -->
+        <div class="card">
+            <h2>📋 任务管理</h2>
+            
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <label>状态筛选:</label>
+                    <select id="status-filter" onchange="filterTasks()">
+                        <option value="all">全部</option>
+                        <option value="completed">已完成</option>
+                        <option value="processing">处理中</option>
+                        <option value="failed">失败</option>
+                        <option value="old">过期</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>时间范围:</label>
+                    <select id="time-filter" onchange="filterTasks()">
+                        <option value="all">全部</option>
+                        <option value="today">今天</option>
+                        <option value="week">本周</option>
+                        <option value="month">本月</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <input type="text" id="search-input" placeholder="搜索任务ID或文件名..." onkeyup="searchTasks()">
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="table" id="tasks-table">
+                    <thead>
+                        <tr>
+                            <th>任务ID</th>
+                            <th>状态</th>
+                            <th>输入文件</th>
+                            <th>输出文件</th>
+                            <th>文件大小</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasks-body">
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                    <span>正在加载任务数据...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 孤立文件管理 -->
+        <div class="card">
+            <h2>📄 孤立文件管理</h2>
+            <p class="text-muted">这些文件没有对应的任务记录，可能是处理过程中产生的临时文件。</p>
+            
+            <div class="orphaned-files" id="orphaned-files">
+                <div class="text-center">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <span>正在扫描孤立文件...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日志查看 -->
+        <div class="card">
+            <h2>📜 系统日志</h2>
+            <div class="log-controls">
+                <select id="log-level">
+                    <option value="all">全部级别</option>
+                    <option value="error">错误</option>
+                    <option value="warning">警告</option>
+                    <option value="info">信息</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="refreshLogs()">刷新日志</button>
+                <button class="btn btn-secondary btn-sm" onclick="clearLogs()">清空显示</button>
+            </div>
+            <div class="log-container" id="log-container">
+                <div class="log-entry">
+                    <span class="log-time">[系统启动]</span>
+                    <span class="log-level log-info">INFO</span>
+                    <span class="log-message">管理面板加载完成</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚠️ 确认删除</h3>
+                <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>您确定要删除这个任务及其所有相关文件吗？</p>
+                <p class="text-danger"><strong>此操作无法撤销！</strong></p>
+                <div id="delete-task-info"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">取消</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量操作模态框 -->
+    <div id="batch-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📦 批量操作</h3>
+                <button class="modal-close" onclick="closeBatchModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>选择要执行的批量操作：</p>
+                <div class="batch-options">
+                    <label class="radio-option">
+                        <input type="radio" name="batch-action" value="delete-old">
+                        <span>删除过期任务（超过7天）</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="batch-action" value="delete-failed">
+                        <span>删除失败任务</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="batch-action" value="delete-all">
+                        <span>删除所有任务</span>
+                    </label>
+                </div>
+                <div id="batch-preview" class="mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeBatchModal()">取消</button>
+                <button class="btn btn-warning" onclick="executeBatchAction()">执行操作</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Demucs音频分离工具管理面板 &copy; 2024</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript文件 -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // 全局变量
+        let allTasks = [];
+        let filteredTasks = [];
+        let deleteTaskId = null;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeAdmin();
+        });
+
+        // 初始化管理面板
+        async function initializeAdmin() {
+            await refreshData();
+            startStatusPolling();
+        }
+
+        // 刷新数据
+        async function refreshData() {
+            window.showMessage('正在刷新数据...', 'info');
+            
+            try {
+                // 获取任务数据
+                const response = await fetch('/admin/api/files');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        updateStatistics(data.data.summary);
+                        updateTasksTable(data.data.tasks);
+                        updateOrphanedFiles(data.data.orphaned_files);
+                        allTasks = data.data.tasks;
+                        filteredTasks = [...allTasks];
+                        window.showMessage('数据刷新成功', 'success');
+                    }
+                }
+            } catch (error) {
+                console.error('刷新数据失败:', error);
+                window.showMessage('数据刷新失败: ' + error.message, 'error');
+            }
+        }
+
+        // 更新统计信息
+        function updateStatistics(summary) {
+            document.getElementById('total-tasks').textContent = summary.total_tasks;
+            document.getElementById('completed-tasks').textContent = summary.completed_tasks;
+            document.getElementById('processing-tasks').textContent = summary.processing_tasks;
+            document.getElementById('old-tasks').textContent = summary.old_tasks;
+        }
+
+        // 更新任务表格
+        function updateTasksTable(tasks) {
+            const tbody = document.getElementById('tasks-body');
+            
+            if (tasks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">暂无任务数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = tasks.map(task => `
+                <tr class="task-row ${task.is_old ? 'task-old' : ''}" data-task-id="${task.task_id}">
+                    <td>
+                        <code>${task.task_id.substring(0, 8)}...</code>
+                        ${task.is_old ? '<span class="badge badge-warning">过期</span>' : ''}
+                    </td>
+                    <td>
+                        <span class="badge badge-${getStatusColor(task.status)}">${getStatusText(task.status)}</span>
+                    </td>
+                    <td>${task.input_files.length} 个文件</td>
+                    <td>${task.output_files.length} 个文件</td>
+                    <td>${formatFileSize(task.total_size)}</td>
+                    <td>${formatDateTime(task.created_time)}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-info" onclick="viewTaskDetails('${task.task_id}')">
+                                📋 详情
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteTask('${task.task_id}')">
+                                🗑️ 删除
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 更新孤立文件
+        function updateOrphanedFiles(orphanedFiles) {
+            const container = document.getElementById('orphaned-files');
+            
+            if (orphanedFiles.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">没有找到孤立文件</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="orphaned-header">
+                    <p>找到 ${orphanedFiles.length} 个孤立文件：</p>
+                    <button class="btn btn-warning btn-sm" onclick="cleanupOrphanedFiles()">
+                        🧹 清理所有孤立文件
+                    </button>
+                </div>
+                <div class="orphaned-list">
+                    ${orphanedFiles.map(file => `
+                        <div class="orphaned-item">
+                            <span class="file-name">${file.name}</span>
+                            <span class="file-type badge">${file.type}</span>
+                            <span class="file-size">${formatFileSize(file.size)}</span>
+                            <button class="btn btn-sm btn-danger" onclick="deleteOrphanedFile('${file.path}')">
+                                删除
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // 获取状态颜色
+        function getStatusColor(status) {
+            const colors = {
+                'completed': 'success',
+                'processing': 'warning',
+                'failed': 'danger',
+                'pending': 'info'
+            };
+            return colors[status] || 'secondary';
+        }
+
+        // 获取状态文本
+        function getStatusText(status) {
+            const texts = {
+                'completed': '已完成',
+                'processing': '处理中',
+                'failed': '失败',
+                'pending': '等待中'
+            };
+            return texts[status] || status;
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 格式化日期时间
+        function formatDateTime(timestamp) {
+            return new Date(timestamp * 1000).toLocaleString('zh-CN');
+        }
+
+        // 删除任务
+        function deleteTask(taskId) {
+            deleteTaskId = taskId;
+            const task = allTasks.find(t => t.task_id === taskId);
+            if (task) {
+                document.getElementById('delete-task-info').innerHTML = `
+                    <div class="task-info">
+                        <p><strong>任务ID:</strong> ${taskId}</p>
+                        <p><strong>输入文件:</strong> ${task.input_files.length} 个</p>
+                        <p><strong>输出文件:</strong> ${task.output_files.length} 个</p>
+                        <p><strong>总大小:</strong> ${formatFileSize(task.total_size)}</p>
+                    </div>
+                `;
+            }
+            document.getElementById('delete-modal').style.display = 'flex';
+        }
+
+        // 确认删除
+        async function confirmDelete() {
+            if (!deleteTaskId) return;
+
+            try {
+                const response = await fetch('/admin/api/tasks/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ task_id: deleteTaskId })
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    window.showMessage(result.message, 'success');
+                    await refreshData();
+                } else {
+                    window.showMessage(result.message, 'error');
+                }
+            } catch (error) {
+                window.showMessage('删除失败: ' + error.message, 'error');
+            }
+
+            closeDeleteModal();
+        }
+
+        // 关闭删除模态框
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').style.display = 'none';
+            deleteTaskId = null;
+        }
+
+        // 清理过期文件
+        async function cleanupOldFiles() {
+            if (!confirm('确定要清理所有过期文件吗？')) return;
+
+            try {
+                const response = await fetch('/admin/api/cleanup/old', {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    window.showMessage(result.message, 'success');
+                    await refreshData();
+                } else {
+                    window.showMessage(result.message, 'error');
+                }
+            } catch (error) {
+                window.showMessage('清理失败: ' + error.message, 'error');
+            }
+        }
+
+        // 清理所有文件
+        async function cleanupAllFiles() {
+            if (!confirm('确定要清理所有文件吗？此操作无法撤销！')) return;
+
+            try {
+                const response = await fetch('/admin/api/cleanup/all', {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    window.showMessage(result.message, 'success');
+                    await refreshData();
+                } else {
+                    window.showMessage(result.message, 'error');
+                }
+            } catch (error) {
+                window.showMessage('清理失败: ' + error.message, 'error');
+            }
+        }
+
+        // 下载系统信息
+        function downloadSystemInfo() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                statistics: {
+                    total_tasks: document.getElementById('total-tasks').textContent,
+                    completed_tasks: document.getElementById('completed-tasks').textContent,
+                    processing_tasks: document.getElementById('processing-tasks').textContent,
+                    old_tasks: document.getElementById('old-tasks').textContent
+                },
+                tasks: allTasks
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `demucs-admin-report-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            window.showMessage('系统信息已导出', 'success');
+        }
+
+        // 筛选任务
+        function filterTasks() {
+            const statusFilter = document.getElementById('status-filter').value;
+            const timeFilter = document.getElementById('time-filter').value;
+
+            filteredTasks = allTasks.filter(task => {
+                // 状态筛选
+                if (statusFilter !== 'all') {
+                    if (statusFilter === 'old' && !task.is_old) return false;
+                    if (statusFilter !== 'old' && task.status !== statusFilter) return false;
+                }
+
+                // 时间筛选
+                if (timeFilter !== 'all') {
+                    const now = Date.now() / 1000;
+                    const taskTime = task.created_time;
+                    const timeDiff = now - taskTime;
+
+                    switch (timeFilter) {
+                        case 'today':
+                            if (timeDiff > 24 * 3600) return false;
+                            break;
+                        case 'week':
+                            if (timeDiff > 7 * 24 * 3600) return false;
+                            break;
+                        case 'month':
+                            if (timeDiff > 30 * 24 * 3600) return false;
+                            break;
+                    }
+                }
+
+                return true;
+            });
+
+            updateTasksTable(filteredTasks);
+        }
+
+        // 搜索任务
+        function searchTasks() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            
+            if (!searchTerm) {
+                updateTasksTable(filteredTasks);
+                return;
+            }
+
+            const searchResults = filteredTasks.filter(task => {
+                return task.task_id.toLowerCase().includes(searchTerm) ||
+                       task.input_files.some(file => file.toLowerCase().includes(searchTerm));
+            });
+
+            updateTasksTable(searchResults);
+        }
+
+        // 开始状态轮询
+        function startStatusPolling() {
+            // 每30秒检查一次系统状态
+            setInterval(async () => {
+                try {
+                    const response = await fetch('/health');
+                    const data = await response.json();
+                    
+                    // 更新服务状态显示
+                    document.getElementById('process-status').textContent = data.status === 'healthy' ? '正常' : '异常';
+                    document.getElementById('process-status').className = `badge badge-${data.status === 'healthy' ? 'success' : 'danger'}`;
+                } catch (error) {
+                    console.error('状态检查失败:', error);
+                }
+            }, 30000);
+        }
+
+        // 占位符函数
+        function viewTaskDetails(taskId) { window.showMessage('任务详情功能开发中...', 'info'); }
+        function cleanupOrphanedFiles() { window.showMessage('孤立文件清理功能开发中...', 'info'); }
+        function deleteOrphanedFile(path) { window.showMessage('单个文件删除功能开发中...', 'info'); }
+        function closeBatchModal() { document.getElementById('batch-modal').style.display = 'none'; }
+        function executeBatchAction() { window.showMessage('批量操作功能开发中...', 'info'); }
+        function refreshLogs() { window.showMessage('日志刷新功能开发中...', 'info'); }
+        function clearLogs() { document.getElementById('log-container').innerHTML = '<div class="log-entry"><span class="log-time">[日志已清空]</span><span class="log-level log-info">INFO</span><span class="log-message">日志显示已清空</span></div>'; }
+    </script>
+</body>
+</html> 

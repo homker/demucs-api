@@ -5,14 +5,21 @@ Demucs音频分离系统自动清理脚本
 """
 
 import os
+import sys
 import time
 import shutil
 import argparse
 import logging
 from datetime import datetime, timedelta
+from pathlib import Path
 from dotenv import load_dotenv
 
-# 加载环境变量
+# 获取项目根目录（脚本在build/目录下）
+SCRIPT_DIR = Path(__file__).parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+
+# 切换到项目根目录并加载环境变量
+os.chdir(PROJECT_ROOT)
 load_dotenv()
 
 # 配置日志

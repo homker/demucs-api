@@ -23,17 +23,47 @@ sse_manager = SSEManager()
 
 @api_bp.route('/models', methods=['GET'])
 def list_models():
-    """Get list of available Demucs models"""
+    """Get list of available demucs models"""
     try:
-        audio_separator = current_app.audio_separator
-        available_models = audio_separator.get_available_models()
-        
+        # 避免立即初始化AudioSeparator，返回静态的模型列表以提高响应速度
+        # 可用的模型列表基于demucs库的标准模型
+        available_models = ["htdemucs", "htdemucs_ft", "htdemucs_6s", "mdx", "mdx_q"]
         return create_success_response({
-            'models': available_models
+            'models': available_models,
+            'default': current_app.config['DEFAULT_MODEL']
         })
     except Exception as e:
-        logger.error(f"Error getting models: {str(e)}")
-        return create_error_response(f"Failed to get available models: {str(e)}")
+        logger.error(f"Error fetching models: {str(e)}")
+        return create_error_response(f"Failed to get models: {str(e)}")
+
+@api_bp.route('/formats', methods=['GET'])
+def list_output_formats():
+    """Get list of supported output formats"""
+    try:
+        # 直接从配置获取格式，避免触发AudioSeparator初始化
+        formats = current_app.config['SUPPORTED_OUTPUT_FORMATS']
+        return create_success_response({
+            'formats': formats,
+            'default': current_app.config['DEFAULT_OUTPUT_FORMAT']
+        })
+    except Exception as e:
+        logger.error(f"Error fetching formats: {str(e)}")
+        return create_error_response(f"Failed to get formats: {str(e)}")
+
+@api_bp.route('/qualities', methods=['GET'])
+def list_quality_options():
+    """Get list of available audio quality options"""
+    try:
+        # 直接从配置获取质量选项，避免触发AudioSeparator初始化
+        quality_settings = current_app.config['AUDIO_QUALITY_SETTINGS']
+        qualities = {k: v['description'] for k, v in quality_settings.items()}
+        return create_success_response({
+            'qualities': qualities,
+            'default': current_app.config['DEFAULT_AUDIO_QUALITY']
+        })
+    except Exception as e:
+        logger.error(f"Error fetching qualities: {str(e)}")
+        return create_error_response(f"Failed to get qualities: {str(e)}")
 
 @api_bp.route('/process', methods=['POST'])
 def process_audio():
@@ -56,6 +86,15 @@ def process_audio():
         # Get parameters
         model_name = request.form.get('model', current_app.config['DEFAULT_MODEL'])
         stems_param = request.form.get('stems', None)
+        output_format = request.form.get('output_format', current_app.config['DEFAULT_OUTPUT_FORMAT'])
+        audio_quality = request.form.get('audio_quality', current_app.config['DEFAULT_AUDIO_QUALITY'])
+        
+        # Validate format and quality
+        if output_format not in current_app.config['SUPPORTED_OUTPUT_FORMATS']:
+            return create_error_response(f"不支持的输出格式: {output_format}。支持的格式: {current_app.config['SUPPORTED_OUTPUT_FORMATS']}")
+        
+        if audio_quality not in current_app.config['AUDIO_QUALITY_SETTINGS']:
+            return create_error_response(f"不支持的音频质量: {audio_quality}。支持的质量: {list(current_app.config['AUDIO_QUALITY_SETTINGS'].keys())}")
         
         # Parse stems if provided
         stems = None
@@ -71,7 +110,7 @@ def process_audio():
         # Save uploaded file
         filename, file_path = current_app.file_manager.save_uploaded_file(file)
         
-        logger.info(f"Starting audio separation process for job: {job_id}")
+        logger.info(f"Starting audio separation process for job: {job_id}, format: {output_format}, quality: {audio_quality}")
         
         # Register task in SSE manager
         sse_manager.create_task(job_id)
@@ -87,24 +126,31 @@ def process_audio():
         # Start processing thread
         def process_thread():
             try:
-                # Start demucs process
-                output_paths = app.audio_separator.separate(
-                    file_path=file_path,
+                # Start demucs process with new format and quality parameters
+                result = app.audio_separator.separate_track(
+                    input_file=file_path,
                     output_dir=job_output_dir,
-                    job_id=job_id,
                     model_name=model_name,
                     stems=stems,
+                    output_format=output_format,
+                    audio_quality=audio_quality,
                     progress_callback=progress_callback
                 )
                 
-                if output_paths:
+                if result and result.get('files'):
+                    # Extract file paths from result
+                    output_paths = [file_info['path'] for file_info in result['files']]
+                    
                     # Create a zip file from the output
                     zip_path = app.file_manager.create_zip_from_output(job_id, output_paths)
                     
-                    # Update progress to 100% when complete
-                    progress_callback(100, "音频分离完成", "completed")
+                    # 设置结果文件路径 - 这是关键的修复
+                    progress_callback(100, f"音频分离完成，格式: {output_format.upper()}，质量: {audio_quality}", "completed")
+                    sse_manager.update_progress(job_id, progress=100, 
+                                             message=f"音频分离完成，格式: {output_format.upper()}，质量: {audio_quality}", 
+                                             status="completed", result_file=zip_path)
                     
-                    logger.info(f"Audio separation completed for job: {job_id}")
+                    logger.info(f"Audio separation completed for job: {job_id}, format: {output_format}, quality: {audio_quality}")
                 else:
                     # If no output paths were returned, the separation failed
                     progress_callback(0, "处理失败", "error")

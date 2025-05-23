@@ -2,8 +2,16 @@ import os
 import logging
 import uuid
 import time
+import subprocess
 from typing import Dict, Optional, List, Tuple, Callable
 import torch
+
+try:
+    from demucs import pretrained
+    from demucs.apply import apply_model
+    from demucs.audio import AudioFile, save_audio
+except ImportError as e:
+    raise ImportError(f"Demucs library not found: {e}")
 
 logger = logging.getLogger(__name__)
 
@@ -12,41 +20,39 @@ class AudioSeparator:
     
     def __init__(self, config):
         self.config = config
-        self.models = []
+        self.device = None
+        self.models = {}
         self.models_loaded = False
-        self.device = self._get_device()
-        logger.info(f"Using device: {self.device}")
+        self.AudioFile = AudioFile
+        self.save_audio = save_audio
     
     def initialize(self):
         """Load models on demand"""
         if not self.models_loaded:
             try:
-                # 导入 demucs 组件
-                import demucs
-                from demucs import pretrained
-                from demucs.apply import apply_model
-                from demucs.audio import AudioFile, save_audio
-                
-                # Make these methods available to other methods in the class
-                self.apply_model = apply_model
-                self.AudioFile = AudioFile
-                self.save_audio = save_audio
+                self.device = self._get_device()
+                logger.info(f"Using device: {self.device}")
                 
                 # 使用正确的API
                 self.models = {}
-                # 常用模型列表
-                model_names = ["htdemucs", "htdemucs_ft", "htdemucs_6s", "mdx", "mdx_q"]
-                for name in model_names:
+                available_models = ["htdemucs", "htdemucs_ft", "htdemucs_6s", "mdx", "mdx_q"]
+                
+                for model_name in available_models:
                     try:
-                        self.models[name] = pretrained.get_model(name)
-                        logger.info(f"Loaded model: {name}")
+                        model = pretrained.get_model(model_name)
+                        self.models[model_name] = model
+                        logger.info(f"Successfully loaded model: {model_name}")
                     except Exception as e:
-                        logger.warning(f"Could not load model {name}: {str(e)}")
+                        logger.warning(f"Failed to load model {model_name}: {e}")
+                
+                if not self.models:
+                    raise RuntimeError("No models could be loaded")
                 
                 self.models_loaded = True
-                logger.info(f"Loaded {len(self.models)} demucs models")
+                logger.info(f"Loaded {len(self.models)} models")
+                
             except Exception as e:
-                logger.error(f"Failed to load demucs models: {str(e)}")
+                logger.error(f"Failed to initialize AudioSeparator: {e}")
                 raise
     
     def _get_device(self) -> str:
@@ -126,8 +132,8 @@ class AudioSeparator:
         reporter.start()
         
         try:
-            # 执行原始apply_model函数
-            result = self.apply_model(
+            # 执行原始apply_model函数 - 修复：使用demucs.apply.apply_model
+            result = apply_model(
                 model=model, 
                 mix=mix,
                 shifts=shifts,
@@ -168,32 +174,47 @@ class AudioSeparator:
                        output_dir: str, 
                        model_name: str = "htdemucs", 
                        stems: List[str] = None, 
+                       output_format: str = None,
+                       audio_quality: str = None,
                        progress_callback: Optional[Callable] = None) -> Dict:
         """
-        Separate an audio track into stems
+        Separate audio tracks using demucs models
         
         Args:
             input_file: Path to input audio file
-            output_dir: Directory to save separated tracks
+            output_dir: Output directory for separated tracks
             model_name: Name of demucs model to use
-            stems: List of stems to extract (vocals, drums, bass, other)
+            stems: List of stems to extract (default: all available)
+            output_format: Output audio format ('wav', 'mp3', 'flac')
+            audio_quality: Audio quality ('low', 'medium', 'high', 'lossless')
             progress_callback: Callback function for progress updates
             
         Returns:
             Dictionary with separation results
         """
-        if not os.path.isfile(input_file):
-            raise FileNotFoundError(f"Input file not found: {input_file}")
-        
-        if not os.path.isdir(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
-        
-        # Default stems if not specified
-        if stems is None or len(stems) == 0:
+        # Set defaults
+        if output_format is None:
+            output_format = self.config.DEFAULT_OUTPUT_FORMAT
+        if audio_quality is None:
+            audio_quality = self.config.DEFAULT_AUDIO_QUALITY
+        if stems is None:
             stems = ["vocals", "drums", "bass", "other"]
         
-        # Create unique ID for this separation job
+        # Validate parameters
+        if output_format not in self.config.SUPPORTED_OUTPUT_FORMATS:
+            raise ValueError(f"不支持的输出格式: {output_format}。支持的格式: {self.config.SUPPORTED_OUTPUT_FORMATS}")
+        
+        if audio_quality not in self.config.AUDIO_QUALITY_SETTINGS:
+            raise ValueError(f"不支持的音频质量: {audio_quality}。支持的质量: {list(self.config.AUDIO_QUALITY_SETTINGS.keys())}")
+        
+        # 确保模型已加载
+        self.initialize()
+        
+        # Generate job ID if not provided
         job_id = str(uuid.uuid4())
+        
+        # 确保输出目录存在
+        os.makedirs(output_dir, exist_ok=True)
         
         try:
             # Get model(s)
@@ -206,20 +227,24 @@ class AudioSeparator:
             # 记录加载开始时间
             load_start_time = time.time()
             
-            # Load audio file
+            # Get quality settings for sample rate
+            quality_settings = self.config.AUDIO_QUALITY_SETTINGS[audio_quality]
+            actual_samplerate = quality_settings.get('sample_rate', self.config.SAMPLE_RATE)
+            
+            # Load audio file with appropriate sample rate
             wav = self.AudioFile(input_file).read(
-                streams=0, 
-                samplerate=self.config['SAMPLE_RATE'], 
-                channels=self.config['CHANNELS']
+                streams=0,
+                samplerate=actual_samplerate,
+                channels=self.config.CHANNELS
             )
             
             # 记录加载完成时间和文件信息
             load_time = time.time() - load_start_time
-            logger.info(f"音频加载完成，耗时: {load_time:.2f}秒，形状: {wav.shape}")
+            logger.info(f"音频加载完成，耗时: {load_time:.2f}秒，形状: {wav.shape}，采样率: {actual_samplerate}")
             
             # 更新加载进度
             if progress_callback:
-                progress_callback(5, f"音频加载完成，时长: {wav.shape[-1]/self.config['SAMPLE_RATE']:.1f}秒", "加载完成")
+                progress_callback(5, f"音频加载完成，时长: {wav.shape[-1]/actual_samplerate:.1f}秒，格式: {output_format.upper()}，质量: {quality_settings['description']}", "加载完成")
             
             # Get filename without extension
             ref = os.path.basename(input_file).rsplit(".", 1)[0]
@@ -234,8 +259,8 @@ class AudioSeparator:
             LOADING_PROGRESS = 0   # 起始进度
             LOADING_COMPLETE = 5   # 加载完成进度
             MODEL_START = 10       # 模型处理开始进度
-            MODEL_END = 90         # 模型处理结束进度
-            SAVING_START = 90      # 保存开始进度
+            MODEL_END = 85         # 模型处理结束进度（为格式转换预留更多时间）
+            SAVING_START = 85      # 保存开始进度
             SAVING_END = 100       # 保存结束进度
             
             result_files = []
@@ -248,10 +273,11 @@ class AudioSeparator:
                     curr_model_name = model.name
                 # BagOfModels可能是模型的集合，在文件名中使用传入的名称
                 
+                # 计算模型进度 - 在try块外定义
+                model_start_progress = MODEL_START + (i * (MODEL_END - MODEL_START) // max(1, total_models))
+                
                 # Report model progress
                 if progress_callback:
-                    # 确保进度值是整数
-                    model_start_progress = MODEL_START + (i * (MODEL_END - MODEL_START) // max(1, total_models - 1))
                     progress_callback(model_start_progress, 
                                      f"开始处理模型: {curr_model_name} ({i+1}/{total_models})",
                                      f"模型处理")
@@ -279,7 +305,7 @@ class AudioSeparator:
                         progress_callback=progress_callback,
                         model_name=curr_model_name,
                         base_progress=model_start_progress,
-                        max_progress=90  # 预留5%给保存音轨文件
+                        max_progress=MODEL_END  # 调整为新的模型结束进度
                     )
                     
                     # 将结果移回CPU
@@ -307,34 +333,50 @@ class AudioSeparator:
                         
                         # 更新保存进度
                         current_step += 1
+                        save_progress = SAVING_START + (current_step * (SAVING_END - SAVING_START) // total_steps)
+                        
                         if progress_callback:
-                            save_progress = SAVING_START + (current_step * (SAVING_END - SAVING_START) // total_steps)
                             progress_callback(save_progress, 
-                                            f"保存 {stem} 音轨 ({curr_model_name})",
+                                            f"保存 {stem} 音轨 ({curr_model_name}) - {output_format.upper()}, {quality_settings['description']}",
                                             f"保存音轨文件")
                         
-                        # Create output filename
-                        filename = f"{ref}_{curr_model_name}_{stem}.wav"
-                        output_path = os.path.join(output_dir, filename)
+                        # Create output filename (without extension)
+                        filename_base = f"{ref}_{curr_model_name}_{stem}"
+                        output_path_base = os.path.join(output_dir, filename_base)
                         
-                        # Save stem audio - 修复索引问题
+                        # Save stem audio with custom format and quality
                         stem_audio = sources[stem_idx]  # 直接使用源索引获取对应的音频数据
                         save_start = time.time()
-                        self.save_audio(stem_audio, 
-                                        output_path, 
-                                        samplerate=self.config['SAMPLE_RATE'])
-                        logger.info(f"保存 {stem} 音轨完成，耗时: {time.time() - save_start:.2f}秒，文件: {output_path}")
+                        
+                        # Use new save method with format and quality support
+                        final_output_path = self.save_audio_with_format(
+                            stem_audio, 
+                            output_path_base,
+                            format_type=output_format,
+                            quality=audio_quality,
+                            samplerate=actual_samplerate
+                        )
+                        
+                        save_time = time.time() - save_start
+                        file_size = os.path.getsize(final_output_path) if os.path.exists(final_output_path) else 0
+                        
+                        logger.info(f"保存 {stem} 音轨完成，耗时: {save_time:.2f}秒，"
+                                  f"文件: {final_output_path}，大小: {file_size//1024}KB，"
+                                  f"格式: {output_format.upper()}，质量: {audio_quality}")
                         
                         result_files.append({
-                            "path": output_path,
-                            "name": filename,
+                            "path": final_output_path,
+                            "name": os.path.basename(final_output_path),
                             "stem": stem,
-                            "model": curr_model_name
+                            "model": curr_model_name,
+                            "format": output_format,
+                            "quality": audio_quality,
+                            "size": file_size
                         })
             
             # Report completion
             if progress_callback:
-                progress_callback(SAVING_END, "音频分离完成", "完成")
+                progress_callback(SAVING_END, f"音频分离完成，格式: {output_format.upper()}，质量: {audio_quality}", "完成")
             
             # Return results
             return {
@@ -343,6 +385,9 @@ class AudioSeparator:
                 "output_dir": output_dir,
                 "model": model_name,
                 "stems": stems,
+                "output_format": output_format,
+                "audio_quality": audio_quality,
+                "quality_description": quality_settings['description'],
                 "files": result_files
             }
             
@@ -356,4 +401,145 @@ class AudioSeparator:
     def get_available_models(self) -> List[str]:
         """Get list of available demucs models"""
         self.initialize()
-        return list(self.models.keys()) 
+        return list(self.models.keys())
+    
+    def separate(self, 
+                 file_path: str, 
+                 output_dir: str, 
+                 job_id: str = None,
+                 model_name: str = "htdemucs", 
+                 stems: List[str] = None, 
+                 progress_callback: Optional[Callable] = None) -> List[str]:
+        """
+        Audio separation method compatible with API routes
+        
+        Args:
+            file_path: Path to input audio file
+            output_dir: Directory to save separated tracks
+            job_id: Job ID for tracking (optional)
+            model_name: Name of demucs model to use
+            stems: List of stems to extract
+            progress_callback: Callback function for progress updates
+            
+        Returns:
+            List of output file paths
+        """
+        try:
+            # Call the main separation method
+            result = self.separate_track(
+                input_file=file_path,
+                output_dir=output_dir,
+                model_name=model_name,
+                stems=stems,
+                progress_callback=progress_callback
+            )
+            
+            # Extract file paths from the result
+            if result and 'files' in result:
+                return [file_info['path'] for file_info in result['files']]
+            else:
+                return []
+                
+        except Exception as e:
+            logger.error(f"音频分离失败: {str(e)}")
+            raise
+    
+    def save_audio_with_format(self, audio_tensor, output_path, 
+                              format_type='wav', quality='high', samplerate=44100):
+        """
+        保存音频文件，支持不同格式和质量
+        
+        Args:
+            audio_tensor: 音频张量
+            output_path: 输出路径（不含扩展名）
+            format_type: 音频格式 ('wav', 'mp3', 'flac')
+            quality: 音频质量 ('low', 'medium', 'high', 'lossless')
+            samplerate: 采样率
+        """
+        try:
+            # 获取质量设置
+            quality_settings = self.config.AUDIO_QUALITY_SETTINGS.get(quality, 
+                                                                     self.config.AUDIO_QUALITY_SETTINGS['high'])
+            
+            # 根据质量调整采样率
+            actual_samplerate = quality_settings.get('sample_rate', samplerate)
+            
+            # 处理无损质量和格式的冲突
+            if quality == 'lossless' and format_type == 'mp3':
+                logger.warning("MP3格式不支持无损质量，降级为高质量")
+                quality = 'high'
+                quality_settings = self.config.AUDIO_QUALITY_SETTINGS['high']
+            
+            # 构建最终文件路径
+            final_output_path = f"{output_path}.{format_type}"
+            
+            if format_type == 'wav' or (format_type == 'flac' and quality == 'lossless'):
+                # 对于WAV和无损FLAC，直接使用demucs的save_audio
+                self.save_audio(audio_tensor, final_output_path, samplerate=actual_samplerate)
+                logger.info(f"保存{format_type.upper()}文件: {final_output_path}")
+                
+            elif format_type in ['mp3', 'flac']:
+                # 对于MP3和有损FLAC，先保存为临时WAV，再转换
+                temp_wav_path = f"{output_path}_temp.wav"
+                
+                try:
+                    # 保存临时WAV文件
+                    self.save_audio(audio_tensor, temp_wav_path, samplerate=actual_samplerate)
+                    
+                    # 使用ffmpeg转换格式和质量
+                    self._convert_audio_format(temp_wav_path, final_output_path, 
+                                             format_type, quality_settings)
+                    
+                    logger.info(f"保存{format_type.upper()}文件: {final_output_path} (质量: {quality})")
+                    
+                finally:
+                    # 清理临时文件
+                    if os.path.exists(temp_wav_path):
+                        os.remove(temp_wav_path)
+            else:
+                raise ValueError(f"不支持的音频格式: {format_type}")
+                
+            return final_output_path
+            
+        except Exception as e:
+            logger.error(f"保存音频文件失败: {str(e)}")
+            raise
+    
+    def _convert_audio_format(self, input_path, output_path, format_type, quality_settings):
+        """使用ffmpeg转换音频格式和质量"""
+        try:
+            cmd = ['ffmpeg', '-i', input_path, '-y']  # -y 覆盖现有文件
+            
+            if format_type == 'mp3':
+                # MP3编码设置
+                bitrate = quality_settings.get('mp3_bitrate', '192k')
+                cmd.extend(['-codec:a', 'libmp3lame', '-b:a', bitrate])
+                
+            elif format_type == 'flac':
+                # FLAC编码设置
+                cmd.extend(['-codec:a', 'flac'])
+                
+            cmd.append(output_path)
+            
+            # 执行转换
+            result = subprocess.run(cmd, 
+                                  capture_output=True, 
+                                  text=True, 
+                                  check=True)
+            
+            logger.debug(f"ffmpeg转换成功: {' '.join(cmd)}")
+            
+        except subprocess.CalledProcessError as e:
+            logger.error(f"ffmpeg转换失败: {e.stderr}")
+            raise RuntimeError(f"音频格式转换失败: {e.stderr}")
+        except FileNotFoundError:
+            logger.error("ffmpeg未找到，请确保已安装ffmpeg")
+            raise RuntimeError("ffmpeg未找到，无法转换音频格式")
+    
+    def get_supported_formats(self):
+        """获取支持的音频格式列表"""
+        return self.config.SUPPORTED_OUTPUT_FORMATS.copy()
+    
+    def get_quality_options(self):
+        """获取音频质量选项"""
+        return {k: v['description'] for k, v in self.config.AUDIO_QUALITY_SETTINGS.items()} 
