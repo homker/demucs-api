@@ -84,13 +84,10 @@
             
             <div class="form-group">
                 <label for="model">分离模型：</label>
-                <select id="model" name="model">
-                    <option value="htdemucs" selected>htdemucs (默认模型，平衡质量和速度)</option>
-                    <option value="htdemucs_ft">htdemucs_ft (高质量，速度较慢)</option>
-                    <option value="htdemucs_6s">htdemucs_6s (6音轨，含钢琴和吉他)</option>
-                    <option value="mdx">mdx (平衡型)</option>
-                    <option value="mdx_q">mdx_q (快速模型)</option>
+                <select id="model" name="model" disabled>
+                    <option value="htdemucs" selected>htdemucs (默认模型，节省服务器资源)</option>
                 </select>
+                <p><small>🛠️ 为节省服务器资源，当前只支持默认模型</small></p>
             </div>
             
             <div class="form-group">
@@ -108,22 +105,18 @@
             
             <div class="form-group">
                 <label for="outputFormat">输出格式：</label>
-                <select id="outputFormat" name="output_format">
-                    <option value="wav" selected>WAV (无损，体积大)</option>
-                    <option value="mp3">MP3 (有损压缩，体积小)</option>
-                    <option value="flac">FLAC (无损压缩，体积中等)</option>
+                <select id="outputFormat" name="output_format" disabled>
+                    <option value="mp3" selected>MP3 (有损压缩，体积小)</option>
                 </select>
+                <p><small>🛠️ 为节省服务器资源，当前只支持MP3格式</small></p>
             </div>
             
             <div class="form-group">
                 <label for="audioQuality">音频质量：</label>
-                <select id="audioQuality" name="audio_quality">
-                    <option value="high" selected>高质量 (320kbps, 44kHz)</option>
-                    <option value="medium">中等质量 (192kbps, 44kHz)</option>
-                    <option value="low">低质量 (128kbps, 22kHz)</option>
-                    <option value="lossless">无损质量 (WAV/FLAC, 44kHz)</option>
+                <select id="audioQuality" name="audio_quality" disabled>
+                    <option value="low" selected>低质量 (128kbps, 22kHz)</option>
                 </select>
-                <p><small id="qualityDescription">质量越高，文件越大但音质越好</small></p>
+                <p><small id="qualityDescription">🛠️ 为节省服务器资源，当前只支持低质量输出</small></p>
             </div>
             
             <div class="form-group">

@@ -136,13 +136,10 @@
                                 <span class="label-icon">🎯</span>
                                 模型选择
                             </label>
-                            <select id="modelSelect" class="form-control">
-                                <option value="htdemucs">htdemucs - 默认高质量</option>
-                                <option value="htdemucs_ft">htdemucs_ft - 微调版本</option>
-                                <option value="htdemucs_6s">htdemucs_6s - 6音轨版本</option>
-                                <option value="mdx">mdx - 平衡型</option>
-                                <option value="mdx_q">mdx_q - 快速版本</option>
+                            <select id="modelSelect" class="form-control" disabled>
+                                <option value="htdemucs" selected>htdemucs - 默认模型（资源限制）</option>
                             </select>
+                            <p><small>🛠️ 为节省服务器资源，当前只支持默认模型</small></p>
                         </div>
                         
                         <div class="form-group">

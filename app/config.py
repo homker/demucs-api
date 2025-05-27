@@ -24,40 +24,27 @@ class Config:
     OUTPUT_FOLDER = os.environ.get('OUTPUT_FOLDER', '/demucs/outputs')
     
     # File settings
-    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 500 * 1024 * 1024))  # 500 MB
+    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 100 * 1024 * 1024))  # 降低为100MB
     ALLOWED_EXTENSIONS = {'mp3', 'wav', 'flac', 'ogg', 'm4a', 'mp4'}
-    FILE_RETENTION_MINUTES = int(os.environ.get('FILE_RETENTION_MINUTES', 60))  # 1 hour
+    FILE_RETENTION_MINUTES = int(os.environ.get('FILE_RETENTION_MINUTES', 30))  # 降低为30分钟
     
-    # Audio processing settings
+    # Audio processing settings - 资源限制配置
     DEFAULT_MODEL = os.environ.get('DEFAULT_MODEL', 'htdemucs')
-    SAMPLE_RATE = int(os.environ.get('SAMPLE_RATE', 44100))
+    AVAILABLE_MODELS = ['htdemucs']  # 只支持默认模型
+    SAMPLE_RATE = int(os.environ.get('SAMPLE_RATE', 22050))  # 降低采样率节省资源
     CHANNELS = int(os.environ.get('CHANNELS', 2))
     
-    # Audio output settings
-    DEFAULT_OUTPUT_FORMAT = os.environ.get('DEFAULT_OUTPUT_FORMAT', 'wav')  # wav, mp3, flac
-    SUPPORTED_OUTPUT_FORMATS = ['wav', 'mp3', 'flac']
+    # Audio output settings - 资源限制配置
+    DEFAULT_OUTPUT_FORMAT = os.environ.get('DEFAULT_OUTPUT_FORMAT', 'mp3')  # 默认MP3
+    SUPPORTED_OUTPUT_FORMATS = ['mp3']  # 只支持MP3格式
     
-    # Audio quality settings (for lossy formats like mp3)
-    DEFAULT_AUDIO_QUALITY = os.environ.get('DEFAULT_AUDIO_QUALITY', 'high')  # low, medium, high, lossless
+    # Audio quality settings - 资源限制配置
+    DEFAULT_AUDIO_QUALITY = os.environ.get('DEFAULT_AUDIO_QUALITY', 'low')  # 默认低质量
     AUDIO_QUALITY_SETTINGS = {
         'low': {
             'mp3_bitrate': '128k',
             'sample_rate': 22050,
             'description': '低质量 (128kbps, 22kHz)'
-        },
-        'medium': {
-            'mp3_bitrate': '192k', 
-            'sample_rate': 44100,
-            'description': '中等质量 (192kbps, 44kHz)'
-        },
-        'high': {
-            'mp3_bitrate': '320k',
-            'sample_rate': 44100, 
-            'description': '高质量 (320kbps, 44kHz)'
-        },
-        'lossless': {
-            'sample_rate': 44100,
-            'description': '无损质量 (WAV/FLAC, 44kHz)'
         }
     }
     

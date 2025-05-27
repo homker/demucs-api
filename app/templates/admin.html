@@ -200,6 +200,28 @@
         </div>
     </div>
 
+    <!-- 任务详情模态框 -->
+    <div id="task-details-modal" class="modal">
+        <div class="modal-content modal-wide">
+            <div class="modal-header">
+                <h3>📋 任务详情</h3>
+                <button class="modal-close" onclick="closeTaskDetailsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="task-details-content">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <span>正在加载任务详情...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTaskDetailsModal()">关闭</button>
+                <button class="btn btn-primary" onclick="downloadTaskResults()" id="download-task-btn" style="display: none;">📥 下载输出文件</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 批量操作模态框 -->
     <div id="batch-modal" class="modal">
         <div class="modal-content">
@@ -688,9 +710,277 @@
                 }
             }, 30000);
         }
+        
+        // 显示确认对话框
+        function showConfirmDialog(title, message, confirmText = '确认', type = 'warning') {
+            return new Promise((resolve) => {
+                const confirmed = confirm(`${title}\n\n${message}`);
+                resolve(confirmed);
+            });
+        }
 
-        // 占位符函数
-        function viewTaskDetails(taskId) { window.showMessage('任务详情功能开发中...', 'info'); }
+        // 查看任务详情
+        async function viewTaskDetails(taskId) {
+            const modal = document.getElementById('task-details-modal');
+            const content = document.getElementById('task-details-content');
+            
+            // 显示模态框
+            modal.style.display = 'flex';
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                modal.style.opacity = '1';
+            }, 10);
+            
+            // 显示加载状态
+            content.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>正在加载任务详情...</span>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch(`/admin/api/tasks/${taskId}/details`);
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    const task = result.data;
+                    renderTaskDetails(task);
+                } else {
+                    content.innerHTML = `
+                        <div class="result-error">
+                            <h5>❌ 加载失败</h5>
+                            <p>${result.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                content.innerHTML = `
+                    <div class="result-error">
+                        <h5>❌ 网络错误</h5>
+                        <p>无法连接到服务器，请检查网络连接。</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // 渲染任务详情
+        function renderTaskDetails(task) {
+            const content = document.getElementById('task-details-content');
+            const downloadBtn = document.getElementById('download-task-btn');
+            
+            // 显示下载按钮（如果有输出文件）
+            if (task.output_files && task.output_files.length > 0) {
+                downloadBtn.style.display = 'inline-block';
+                downloadBtn.onclick = () => downloadTaskResults(task.task_id);
+            } else {
+                downloadBtn.style.display = 'none';
+            }
+            
+            content.innerHTML = `
+                <div class="task-details">
+                    <!-- 基本信息 -->
+                    <div class="task-basic-info">
+                        <h4>📋 任务基本信息</h4>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">任务ID</span>
+                                <span class="info-value"><code>${task.task_id}</code></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">任务状态</span>
+                                <span class="info-value">
+                                    <span class="badge badge-${getStatusColor(task.status)}">${getStatusText(task.status)}</span>
+                                    ${task.is_old ? '<span class="badge badge-warning ml-2">过期</span>' : ''}
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">创建时间</span>
+                                <span class="info-value">${formatDateTime(task.created_time)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">最后更新</span>
+                                <span class="info-value">${formatDateTime(task.latest_time)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">总文件大小</span>
+                                <span class="info-value">${formatFileSize(task.total_size)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">文件统计</span>
+                                <span class="info-value">输入 ${task.input_files.length} 个 · 输出 ${task.output_files.length} 个</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 文件列表 -->
+                    <div class="file-sections">
+                        <!-- 输入文件 -->
+                        <div class="file-section">
+                            <div class="file-section-header">
+                                <h5>📤 输入文件 <span class="file-count-badge">${task.input_files.length}</span></h5>
+                            </div>
+                            ${task.input_files.length > 0 ? `
+                                <ul class="file-list">
+                                    ${task.input_files.map(file => `
+                                        <li class="file-item">
+                                            <div class="file-info">
+                                                <div class="file-name">${file.name}</div>
+                                                <div class="file-path" title="${file.path}">${file.path}</div>
+                                                <div class="file-meta">
+                                                    <span>📊 ${formatFileSize(file.size)}</span>
+                                                    <span>🕒 ${formatDateTime(file.modified_time)}</span>
+                                                </div>
+                                            </div>
+                                            <div class="file-actions">
+                                                <button class="btn btn-xs btn-secondary" onclick="copyToClipboard('${file.path}')" title="复制文件路径">
+                                                    📋 复制路径
+                                                </button>
+                                                <button class="btn btn-xs btn-danger" onclick="deleteTaskFile('${file.path}', '${file.name}')" title="删除此文件">
+                                                    🗑️ 删除
+                                                </button>
+                                            </div>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            ` : `
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">📁</div>
+                                    <p class="empty-state-text">没有输入文件</p>
+                                </div>
+                            `}
+                        </div>
+                        
+                        <!-- 输出文件 -->
+                        <div class="file-section">
+                            <div class="file-section-header">
+                                <h5>📥 输出文件 <span class="file-count-badge">${task.output_files.length}</span></h5>
+                            </div>
+                            ${task.output_files.length > 0 ? `
+                                <ul class="file-list">
+                                    ${task.output_files.map(file => `
+                                        <li class="file-item">
+                                            <div class="file-info">
+                                                <div class="file-name">${file.name}</div>
+                                                <div class="file-path" title="${file.path}">${file.path}</div>
+                                                <div class="file-meta">
+                                                    <span>📊 ${formatFileSize(file.size)}</span>
+                                                    <span>🕒 ${formatDateTime(file.modified_time)}</span>
+                                                </div>
+                                            </div>
+                                            <div class="file-actions">
+                                                <button class="btn btn-xs btn-primary" onclick="downloadFile('${file.path}', '${file.name}')" title="下载此文件">
+                                                    📥 下载
+                                                </button>
+                                                <button class="btn btn-xs btn-secondary" onclick="copyToClipboard('${file.path}')" title="复制文件路径">
+                                                    📋 复制路径
+                                                </button>
+                                                <button class="btn btn-xs btn-danger" onclick="deleteTaskFile('${file.path}', '${file.name}')" title="删除此文件">
+                                                    🗑️ 删除
+                                                </button>
+                                            </div>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            ` : `
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">📂</div>
+                                    <p class="empty-state-text">没有输出文件</p>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 关闭任务详情模态框
+        function closeTaskDetailsModal() {
+            const modal = document.getElementById('task-details-modal');
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+        
+        // 复制到剪贴板
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                window.showMessage('文件路径已复制到剪贴板', 'success');
+            } catch (error) {
+                // 降级到传统方法
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    window.showMessage('文件路径已复制到剪贴板', 'success');
+                } catch (e) {
+                    window.showMessage('复制失败，请手动复制', 'error');
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+        
+        // 下载文件
+        function downloadFile(filePath, fileName) {
+            const url = `/admin/api/files/download?file_path=${encodeURIComponent(filePath)}`;
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.showMessage(`正在下载 ${fileName}...`, 'info');
+        }
+        
+        // 删除任务文件
+        async function deleteTaskFile(filePath, fileName) {
+            const confirmed = await showConfirmDialog(
+                '确认删除文件',
+                `确定要删除文件 "${fileName}" 吗？此操作无法撤销。`,
+                '删除',
+                'danger'
+            );
+            
+            if (!confirmed) return;
+            
+            try {
+                const response = await fetch('/admin/api/files/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ file_path: filePath })
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    window.showMessage('文件删除成功', 'success');
+                                         // 重新加载任务详情
+                     const modal = document.getElementById('task-details-modal');
+                     if (modal.style.display !== 'none') {
+                         // 从模态框标题或其他地方获取当前任务ID
+                         const taskIdMatch = content.innerHTML.match(/task_id.*?<code>(.*?)<\/code>/);
+                         if (taskIdMatch) {
+                             viewTaskDetails(taskIdMatch[1]);
+                         }
+                     }
+                } else {
+                    window.showMessage(result.message, 'error');
+                }
+            } catch (error) {
+                window.showMessage('删除失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 下载任务输出文件
+        function downloadTaskResults(taskId) {
+            window.showMessage('批量下载功能开发中...', 'info');
+        }
         function cleanupOrphanedFiles() { window.showMessage('孤立文件清理功能开发中...', 'info'); }
         function deleteOrphanedFile(path) { window.showMessage('单个文件删除功能开发中...', 'info'); }
         function closeBatchModal() { document.getElementById('batch-modal').style.display = 'none'; }

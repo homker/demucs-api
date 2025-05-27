@@ -58,6 +58,13 @@ ENV UPLOAD_FOLDER=/demucs/uploads
 ENV OUTPUT_FOLDER=/demucs/outputs
 ENV OMP_NUM_THREADS=1
 
+# 资源限制配置
+ENV DEFAULT_OUTPUT_FORMAT=mp3
+ENV DEFAULT_AUDIO_QUALITY=low
+ENV MAX_CONTENT_LENGTH=104857600
+ENV FILE_RETENTION_MINUTES=30
+ENV SAMPLE_RATE=22050
+
 # 验证安装
 RUN ffmpeg -version && \
     python -c "import torchaudio; print(f'Available backends: {torchaudio.list_audio_backends()}')" && \

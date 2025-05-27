@@ -456,6 +456,112 @@ def delete_file():
             'message': f'删除文件失败: {str(e)}'
         }), 500
 
+@admin_bp.route('/api/tasks/<task_id>/details', methods=['GET'])
+@admin_required
+def get_task_details(task_id):
+    """获取任务详情API"""
+    try:
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        output_folder = current_app.config['OUTPUT_FOLDER']
+        file_retention_minutes = current_app.config['FILE_RETENTION_MINUTES']
+        
+        current_time = time.time()
+        task_info = {
+            'task_id': task_id,
+            'input_files': [],
+            'output_files': [],
+            'total_size': 0,
+            'created_time': None,
+            'latest_time': None,
+            'status': 'unknown',
+            'is_old': False
+        }
+        
+        # 扫描输入文件
+        if os.path.exists(upload_folder):
+            for root, dirs, files in os.walk(upload_folder):
+                for file in files:
+                    if task_id in file or task_id in root:
+                        file_path = os.path.join(root, file)
+                        try:
+                            stat = os.stat(file_path)
+                            file_info = {
+                                'name': file,
+                                'path': file_path,
+                                'size': stat.st_size,
+                                'modified_time': stat.st_mtime,
+                                'type': 'input'
+                            }
+                            task_info['input_files'].append(file_info)
+                            task_info['total_size'] += stat.st_size
+                            
+                            if task_info['created_time'] is None or stat.st_mtime < task_info['created_time']:
+                                task_info['created_time'] = stat.st_mtime
+                            if task_info['latest_time'] is None or stat.st_mtime > task_info['latest_time']:
+                                task_info['latest_time'] = stat.st_mtime
+                        except OSError:
+                            continue
+        
+        # 扫描输出文件
+        if os.path.exists(output_folder):
+            for root, dirs, files in os.walk(output_folder):
+                for file in files:
+                    if task_id in file or task_id in root:
+                        file_path = os.path.join(root, file)
+                        try:
+                            stat = os.stat(file_path)
+                            file_info = {
+                                'name': file,
+                                'path': file_path,
+                                'size': stat.st_size,
+                                'modified_time': stat.st_mtime,
+                                'type': 'output'
+                            }
+                            task_info['output_files'].append(file_info)
+                            task_info['total_size'] += stat.st_size
+                            
+                            if task_info['latest_time'] is None or stat.st_mtime > task_info['latest_time']:
+                                task_info['latest_time'] = stat.st_mtime
+                        except OSError:
+                            continue
+        
+        # 设置任务状态
+        if task_info['output_files']:
+            task_info['status'] = 'completed'
+        elif task_info['input_files']:
+            task_info['status'] = 'processing'
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': '任务不存在或已被删除'
+            }), 404
+        
+        # 设置创建时间和最新时间
+        if task_info['created_time'] is None:
+            task_info['created_time'] = task_info['latest_time']
+        if task_info['latest_time'] is None:
+            task_info['latest_time'] = task_info['created_time']
+        
+        # 检查是否过期
+        if task_info['latest_time']:
+            task_info['is_old'] = (current_time - task_info['latest_time']) > (file_retention_minutes * 60)
+        
+        # 按修改时间排序文件
+        task_info['input_files'].sort(key=lambda x: x['modified_time'], reverse=True)
+        task_info['output_files'].sort(key=lambda x: x['modified_time'], reverse=True)
+        
+        return jsonify({
+            'status': 'success',
+            'data': task_info
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"获取任务详情失败: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'获取任务详情失败: {str(e)}'
+        }), 500
+
 @admin_bp.route('/api/files/download')
 @admin_required
 def download_file():

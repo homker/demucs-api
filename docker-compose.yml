@@ -20,6 +20,12 @@ services:
       - UPLOAD_FOLDER=/demucs/uploads
       - OUTPUT_FOLDER=/demucs/outputs
       - TORCH_HOME=/demucs/models
+      # 资源限制配置
+      - DEFAULT_OUTPUT_FORMAT=mp3
+      - DEFAULT_AUDIO_QUALITY=low
+      - MAX_CONTENT_LENGTH=104857600
+      - FILE_RETENTION_MINUTES=30
+      - SAMPLE_RATE=22050
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -27,6 +33,15 @@ services:
       retries: 3
       start_period: 40s
     restart: unless-stopped
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
 
 volumes:
   uploads:
