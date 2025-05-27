@@ -20,8 +20,8 @@ class Config:
     
     # File paths
     BASE_DIR = Path(os.path.abspath(os.path.dirname(__file__))).parent
-    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', os.path.join(BASE_DIR, 'uploads'))
-    OUTPUT_FOLDER = os.environ.get('OUTPUT_FOLDER', os.path.join(BASE_DIR, 'outputs'))
+    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', '/demucs/uploads')
+    OUTPUT_FOLDER = os.environ.get('OUTPUT_FOLDER', '/demucs/outputs')
     
     # File settings
     MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 500 * 1024 * 1024))  # 500 MB
@@ -88,8 +88,8 @@ class TestingConfig(Config):
     LOG_LEVEL = 'DEBUG'
     
     # Use temporary directories for tests
-    UPLOAD_FOLDER = os.path.join(Config.BASE_DIR, 'test_uploads')
-    OUTPUT_FOLDER = os.path.join(Config.BASE_DIR, 'test_outputs')
+    UPLOAD_FOLDER = '/demucs/test_uploads'
+    OUTPUT_FOLDER = '/demucs/test_outputs'
 
 
 # Configuration dictionary

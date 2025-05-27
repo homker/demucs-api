@@ -65,14 +65,40 @@ python run.py
 ### Docker安装 (推荐)
 
 ```bash
-# 使用快捷构建脚本
-./build.sh docker
+# 使用docker-compose（推荐，自动挂载目录）
+docker-compose up -d
 
-# 使用docker-compose
-cd build && docker-compose up -d
+# 或使用快捷构建脚本
+./build.sh docker
 
 # 或使用部署脚本
 ./build.sh deploy
+```
+
+#### 目录挂载说明
+
+系统使用 `/demucs` 作为容器内的工作目录，并支持以下目录的外部挂载：
+
+- **上传目录**: `/demucs/uploads` - 存放待处理的音频文件
+- **输出目录**: `/demucs/outputs` - 存放分离后的音频文件  
+- **模型目录**: `/demucs/models` - 存放Demucs模型缓存
+
+使用docker-compose时，这些目录会自动挂载到本地的 `./data/` 目录下：
+
+```bash
+mkdir -p data/{uploads,outputs,models}
+docker-compose up -d
+```
+
+手动运行Docker容器时，建议挂载这些目录：
+
+```bash
+docker run -d \
+  -p 8080:8080 \
+  -v $(pwd)/data/uploads:/demucs/uploads \
+  -v $(pwd)/data/outputs:/demucs/outputs \
+  -v $(pwd)/data/models:/demucs/models \
+  demucs-webapp
 ```
 
 ## 🎯 使用方法

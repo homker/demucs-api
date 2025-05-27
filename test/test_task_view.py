@@ -15,8 +15,8 @@ def create_test_files():
     print("🎯 创建示例任务文件...")
     
     # 创建上传和输出目录
-    upload_dir = "../uploads"
-    output_dir = "../outputs"
+    upload_dir = "/demucs/uploads"
+    output_dir = "/demucs/outputs"
     os.makedirs(upload_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
     

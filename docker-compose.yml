@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  demucs:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      # 挂载上传目录
+      - ./data/uploads:/demucs/uploads
+      # 挂载输出目录
+      - ./data/outputs:/demucs/outputs
+      # 挂载模型目录（用于模型缓存）
+      - ./data/models:/demucs/models
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=your-secret-key-here
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin123
+      - UPLOAD_FOLDER=/demucs/uploads
+      - OUTPUT_FOLDER=/demucs/outputs
+      - TORCH_HOME=/demucs/models
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+volumes:
+  uploads:
+    driver: local
+  outputs:
+    driver: local
+  models:
+    driver: local 
